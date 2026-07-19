@@ -25,7 +25,7 @@ $$;
 insert into public.admin_users (id, email, full_name, role)
 select id, email, 'Autoobenz', 'admin'
 from auth.users
-where email = 'autobenz@outlook.sa'
+where email = 'almnesiy_501@hotmail.com'
 on conflict (id) do update
 set email = excluded.email,
     full_name = excluded.full_name,
