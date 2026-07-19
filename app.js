@@ -18,6 +18,7 @@ const money = (value) => {
 
 const imgLocal = (url) => {
   if (!url) return "/assets/images/autoobenz-logo.png";
+  if (String(url).includes(".supabase.co/storage/")) return url;
   try {
     return `/assets/images/${new URL(url).pathname.split("/").pop()}`;
   } catch {
@@ -80,6 +81,85 @@ const brandModels = (brandSlug) => {
   return state.categories
     .filter((category) => category.parent === root.id && category.count > 0)
     .sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const supabaseHeaders = () => ({
+  apikey: window.AUTOOBENZ_SUPABASE.publishableKey,
+  Authorization: `Bearer ${window.AUTOOBENZ_SUPABASE.publishableKey}`,
+});
+
+const supabaseFetch = async (path) => {
+  const config = window.AUTOOBENZ_SUPABASE;
+  if (!config?.url || !config?.publishableKey) return null;
+  const response = await fetch(`${config.url}/rest/v1/${path}`, {
+    headers: supabaseHeaders(),
+  });
+  if (!response.ok) throw new Error(`Supabase ${response.status}: ${await response.text()}`);
+  return response.json();
+};
+
+const localData = async () => {
+  const [products, categories, brands, types] = await Promise.all([
+    fetch("/assets/data/products.json").then((res) => res.json()),
+    fetch("/assets/data/categories.json").then((res) => res.json()),
+    fetch("/assets/data/brands.json").then((res) => res.json()),
+    fetch("/assets/data/types.json").then((res) => res.json()),
+  ]);
+  return {
+    products: products.sort((a, b) => Number(b.id) - Number(a.id)),
+    categories,
+    brands,
+    types,
+  };
+};
+
+const normalizeSupabaseProduct = (product) => {
+  const brandSlug = product.brands?.slug;
+  const categorySlug = product.categories?.slug;
+  const typeSlug = product.product_types?.slug;
+  const imageUrls = (product.product_images || [])
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+    .map((image) => image.image_url);
+  return {
+    id: product.old_id ? Number(product.old_id) : product.id,
+    name: product.title_ar || product.title_en || "",
+    slug: product.slug,
+    price: Number(product.price_kwd || 0),
+    regular_price: Number(product.compare_at_price_kwd || product.price_kwd || 0),
+    images: imageUrls.length ? imageUrls : ["/assets/images/autoobenz-logo.png"],
+    cat_slugs: product.cat_slugs?.length ? product.cat_slugs : [brandSlug, categorySlug, typeSlug, product.model].filter(Boolean),
+    description: product.description_ar || product.description_en || "",
+  };
+};
+
+const supabaseData = async () => {
+  const [products, categories, brands, types] = await Promise.all([
+    supabaseFetch("products?select=*,brands(slug,name_ar,name_en),categories(slug,name_ar,name_en),product_types(slug,name_ar,name_en),product_images(image_url,sort_order)&is_active=eq.true&order=created_at.desc"),
+    supabaseFetch("categories?select=*&order=sort_order.asc"),
+    supabaseFetch("brands?select=*&order=sort_order.asc"),
+    supabaseFetch("product_types?select=*&order=sort_order.asc"),
+  ]);
+  if (!products?.length) return null;
+  return {
+    products: products.map(normalizeSupabaseProduct),
+    categories: categories.map((category) => ({
+      id: category.old_id || category.id,
+      slug: category.slug,
+      name: category.name_ar,
+      parent: category.parent_old_id || 0,
+      count: category.product_count || 0,
+    })),
+    brands: brands.map((brand) => ({
+      slug: brand.slug,
+      ar: brand.name_ar,
+      en: brand.name_en,
+    })),
+    types: types.map((type) => ({
+      slug: type.slug,
+      ar: type.name_ar,
+      en: type.name_en,
+    })),
+  };
 };
 
 function navigate(path) {
@@ -534,16 +614,14 @@ function render() {
 }
 
 async function boot() {
-  const [products, categories, brands, types] = await Promise.all([
-    fetch("/assets/data/products.json").then((res) => res.json()),
-    fetch("/assets/data/categories.json").then((res) => res.json()),
-    fetch("/assets/data/brands.json").then((res) => res.json()),
-    fetch("/assets/data/types.json").then((res) => res.json()),
-  ]);
-  state.products = products.sort((a, b) => Number(b.id) - Number(a.id));
-  state.categories = categories;
-  state.brands = brands;
-  state.types = types;
+  const data = await supabaseData().catch((error) => {
+    console.warn("Supabase data is not ready yet, using local data.", error);
+    return null;
+  }) || await localData();
+  state.products = data.products;
+  state.categories = data.categories;
+  state.brands = data.brands;
+  state.types = data.types;
   renderFooterLinks();
   render();
 }
