@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>أوتو بنز | قطع كاربون فايبر وبودي كت للسيارات الفاخرة في الكويت</title>
+    <meta name="description" content="متجر أوتو بنز الكويت — بودي كت كاربون فايبر، ستيرنق، شاشات كاربلاي، جنوط وإضاءة للسيارات الفاخرة." />
+    <link rel="icon" href="/assets/images/autoobenz-logo.png" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="topbar">توصيل لجميع مناطق الكويت 🚚 تقسيط على 4 دفعات بدون فوائد مع تابي • شحن عالمي</div>
+    <header class="site-header">
+      <div class="container header-inner">
+        <button class="icon-button mobile-only" id="menuButton" aria-label="القائمة">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <a href="/" class="brand-link" data-link>
+          <img src="/assets/images/autoobenz-logo.png" alt="أوتو بنز" />
+        </a>
+        <nav class="desktop-nav">
+          <a href="/" data-link>الرئيسية</a>
+          <a href="/shop" data-link>المتجر</a>
+          <a href="/vin-check" data-link>افحص سيارتك VIN</a>
+          <a href="/shop?type=body-kit" data-link>بودي كت</a>
+          <a href="/shop?type=steering-wheel" data-link>ستيرنق</a>
+          <a href="/shop?type=carplay" data-link>كاربلاي وشاشات</a>
+        </nav>
+        <div class="header-actions">
+          <a class="whatsapp-link" href="https://wa.me/96550304591" target="_blank" rel="noreferrer">
+            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.8 1.3-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4l.9 2.1c.1.2.1.4 0 .6l-.4.6-.5.5c-.2.2-.3.4-.1.7.2.3.8 1.4 1.8 2.2 1.2 1.1 2.3 1.4 2.6 1.6.3.1.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .8-.2 1.5Z"/></svg>
+            <span dir="ltr">+965 5030 4591</span>
+          </a>
+          <button class="cart-button" id="cartButton">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.5 11h10L20 8H6"/></svg>
+            <span>السلة</span>
+            <b id="cartCount">0</b>
+          </button>
+        </div>
+      </div>
+      <nav class="mobile-nav" id="mobileNav">
+        <a href="/" data-link>الرئيسية</a>
+        <a href="/shop" data-link>المتجر</a>
+        <a href="/vin-check" data-link>افحص سيارتك VIN</a>
+        <a href="/shop?type=body-kit" data-link>بودي كت</a>
+        <a href="/shop?type=steering-wheel" data-link>ستيرنق</a>
+        <a href="/shop?type=carplay" data-link>كاربلاي وشاشات</a>
+      </nav>
+    </header>
+
+    <main id="app"></main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <img src="/assets/images/autoobenz-logo.png" alt="أوتو بنز" class="footer-logo" />
+          <p>شركة أوتو بنز — إدارة كويتية متخصصة بقطع الكاربون فايبر والبودي كت للسيارات الفاخرة. شحن لجميع دول العالم.</p>
+          <small>سجل تجاري: 525945</small>
+        </div>
+        <div>
+          <h3>الأقسام</h3>
+          <ul id="footerTypes"></ul>
+        </div>
+        <div>
+          <h3>الماركات</h3>
+          <ul id="footerBrands"></ul>
+        </div>
+        <div>
+          <h3>تواصل معنا</h3>
+          <ul>
+            <li><a href="https://wa.me/96550304591" target="_blank" rel="noreferrer">واتساب: <span dir="ltr">+965 5030 4591</span></a></li>
+            <li><a href="https://www.instagram.com/autoobenz/" target="_blank" rel="noreferrer">انستغرام: @autoobenz ✓</a></li>
+            <li>الكويت — توصيل لجميع المناطق</li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">
+        <div class="container">
+          <span>© 2026 شركة أوتو بنز — جميع الحقوق محفوظة</span>
+          <span>دفع آمن: KNET • Apple Pay • Visa / Mastercard • تابي</span>
+        </div>
+      </div>
+    </footer>
+
+    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+      <div class="drawer-panel">
+        <div class="drawer-head">
+          <h2>السلة</h2>
+          <button class="icon-button" id="closeCart" aria-label="إغلاق">
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div id="cartItems" class="cart-items"></div>
+        <div class="drawer-foot">
+          <div class="cart-total"><span>الإجمالي</span><b id="cartTotal">0 د.ك</b></div>
+          <a id="checkoutLink" class="primary-button" target="_blank" rel="noreferrer">إرسال الطلب عبر واتساب</a>
+        </div>
+      </div>
+    </aside>
+
+    <a class="floating-whatsapp" href="https://wa.me/96550304591?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D8%8C%20%D8%B9%D9%86%D8%AF%D9%8A%20%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D8%B9%D9%86%20%D9%85%D9%86%D8%AA%D8%AC%D8%A7%D8%AA%D9%83%D9%85" target="_blank" rel="noreferrer" aria-label="تواصل واتساب">
+      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.8 1.3-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4l.9 2.1c.1.2.1.4 0 .6l-.4.6-.5.5c-.2.2-.3.4-.1.7.2.3.8 1.4 1.8 2.2 1.2 1.1 2.3 1.4 2.6 1.6.3.1.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .8-.2 1.5Z"/></svg>
+    </a>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

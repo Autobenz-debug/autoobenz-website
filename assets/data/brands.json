@@ -1,0 +1,52 @@
+[
+  {
+    "slug": "mercedes-benz",
+    "en": "Mercedes-Benz",
+    "ar": "مرسيدس بنز"
+  },
+  {
+    "slug": "bmw",
+    "en": "BMW",
+    "ar": "بي إم دبليو"
+  },
+  {
+    "slug": "v",
+    "en": "Porsche",
+    "ar": "بورشه"
+  },
+  {
+    "slug": "land-rover",
+    "en": "Land Rover",
+    "ar": "لاند روفر"
+  },
+  {
+    "slug": "audi",
+    "en": "Audi",
+    "ar": "أودي"
+  },
+  {
+    "slug": "ferrari",
+    "en": "Ferrari",
+    "ar": "فيراري"
+  },
+  {
+    "slug": "lamborghini",
+    "en": "Lamborghini",
+    "ar": "لامبورغيني"
+  },
+  {
+    "slug": "mclaren",
+    "en": "McLaren",
+    "ar": "ماكلارين"
+  },
+  {
+    "slug": "rolls-royce",
+    "en": "Rolls-Royce",
+    "ar": "رولز رويس"
+  },
+  {
+    "slug": "bentley",
+    "en": "Bentley",
+    "ar": "بنتلي"
+  }
+]

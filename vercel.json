@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!assets/|styles.css|app.js|server.js|package.json|README.md).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
