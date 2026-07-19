@@ -68,12 +68,24 @@ const descendants = (slug) => {
 const inBrand = (product, brandSlug) => {
   if (!brandSlug) return true;
   const allowed = descendants(brandSlug);
-  return product.cat_slugs.some((slug) => allowed.has(slug));
+  return (product.cat_slugs || []).some((slug) => allowed.has(slug));
 };
 
 const productBrand = (product) => state.brands.find((brand) => inBrand(product, brand.slug));
 
 const brandProductCount = (brandSlug) => state.products.filter((product) => inBrand(product, brandSlug)).length;
+
+const productImages = (product) => {
+  const images = Array.isArray(product.images) ? product.images.filter(Boolean) : [];
+  return images.length ? images : ["/assets/images/autoobenz-logo.png"];
+};
+
+const productCategories = (product) => {
+  if (Array.isArray(product.categories) && product.categories.length) return product.categories;
+  return (product.cat_slugs || [])
+    .map((slug) => state.categories.find((category) => category.slug === slug)?.name || slug)
+    .filter(Boolean);
+};
 
 const brandModels = (brandSlug) => {
   const root = state.categories.find((category) => category.slug === brandSlug && Number(category.parent) === 0);
@@ -128,6 +140,7 @@ const normalizeSupabaseProduct = (product) => {
     regular_price: Number(product.compare_at_price_kwd || product.price_kwd || 0),
     images: imageUrls.length ? imageUrls : ["/assets/images/autoobenz-logo.png"],
     cat_slugs: product.cat_slugs?.length ? product.cat_slugs : [brandSlug, categorySlug, typeSlug, product.model].filter(Boolean),
+    categories: [product.categories?.name_ar, product.product_types?.name_ar].filter(Boolean),
     description: product.description_ar || product.description_en || "",
   };
 };
@@ -228,7 +241,7 @@ function renderCart() {
     if (!product) return "";
     return `
       <div class="cart-item">
-        <img src="${imgLocal(product.images[0])}" alt="${escapeHtml(product.name)}">
+        <img src="${imgLocal(productImages(product)[0])}" alt="${escapeHtml(product.name)}">
         <div>
           <h4>${escapeHtml(product.name)}</h4>
           <div class="qty-row">
@@ -272,7 +285,7 @@ function productCard(product) {
   return `
     <a class="product-card" href="/product/${product.slug}" data-link>
       <div class="product-image">
-        <img src="${imgLocal(product.images[0])}" alt="${escapeHtml(product.name)}" loading="lazy">
+        <img src="${imgLocal(productImages(product)[0])}" alt="${escapeHtml(product.name)}" loading="lazy">
         ${discount ? `<span class="sale-badge">خصم ${discount}%</span>` : ""}
       </div>
       <div class="product-body">
@@ -520,9 +533,9 @@ function renderProduct(slug) {
         <nav class="breadcrumbs"><a href="/" data-link>الرئيسية</a> / <a href="/shop" data-link>المتجر</a></nav>
         <div class="product-detail">
           <div>
-            <div class="gallery-main"><img id="mainImage" src="${imgLocal(product.images[0])}" alt="${escapeHtml(product.name)}"></div>
+            <div class="gallery-main"><img id="mainImage" src="${imgLocal(productImages(product)[0])}" alt="${escapeHtml(product.name)}"></div>
             <div class="thumbs">
-              ${product.images.map((image, index) => `<button class="${index === 0 ? "active" : ""}" data-image="${imgLocal(image)}"><img src="${imgLocal(image)}" alt=""></button>`).join("")}
+              ${productImages(product).map((image, index) => `<button class="${index === 0 ? "active" : ""}" data-image="${imgLocal(image)}"><img src="${imgLocal(image)}" alt=""></button>`).join("")}
             </div>
           </div>
           <div class="product-info">
@@ -534,7 +547,7 @@ function renderProduct(slug) {
             </div>
             <p class="installment">أو قسّطها على 4 دفعات × <b>${money(product.price / 4)}</b> بدون فوائد مع تابي</p>
             <p class="description">${escapeHtml(product.description || "تواصل معنا لمعرفة التفاصيل والتوافق.")}</p>
-            <div class="chips"><span>التوافق:</span>${product.categories.map((cat) => `<span class="chip">${escapeHtml(cat)}</span>`).join("")}</div>
+            <div class="chips"><span>التوافق:</span>${productCategories(product).map((cat) => `<span class="chip">${escapeHtml(cat)}</span>`).join("")}</div>
             <div class="product-actions">
               <button class="primary-button" type="button" onclick="addToCart(${product.id})">إضافة للسلة</button>
               <a class="secondary-button" href="https://wa.me/96550304591?text=${encodeURIComponent(`مرحبا، عندي استفسار عن ${product.name}`)}" target="_blank" rel="noreferrer">استفسار واتساب</a>
