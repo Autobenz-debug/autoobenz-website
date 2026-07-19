@@ -5,6 +5,7 @@ const IMAGE_BUCKET = "product-images";
 const adminState = {
   session: null,
   products: [],
+  orders: [],
   brands: [],
   categories: [],
   types: [],
@@ -118,17 +119,28 @@ function showLogin() {
 
 async function loadData() {
   const select = "*,brands(id,slug,name_ar,name_en),categories(id,slug,name_ar,name_en),product_types(id,slug,name_ar,name_en),product_images(id,image_url,sort_order)";
-  const [products, brands, categories, types] = await Promise.all([
+  const [products, brands, categories, types, orders] = await Promise.all([
     supabaseRest(`products?select=${select}&order=created_at.desc`),
     supabaseRest("brands?select=*&order=sort_order.asc"),
     supabaseRest("categories?select=*&order=sort_order.asc"),
     supabaseRest("product_types?select=*&order=sort_order.asc"),
+    loadOrders(),
   ]);
   adminState.products = products || [];
+  adminState.orders = orders || [];
   adminState.brands = brands || [];
   adminState.categories = categories || [];
   adminState.types = types || [];
   renderEverything();
+}
+
+async function loadOrders() {
+  try {
+    return await supabaseRest("orders?select=*,order_items(*)&order=created_at.desc");
+  } catch (error) {
+    console.warn("Orders table is not ready yet.", error);
+    return [];
+  }
 }
 
 function productImage(product) {
@@ -146,6 +158,7 @@ function renderStats() {
     ["ظاهرة في المتجر", active],
     ["مخفية", hidden],
     ["الأكثر طلباً", featured],
+    ["طلبات جديدة", adminState.orders.filter((order) => order.status === "new").length],
   ].map(([label, value]) => `<div class="stat-card"><span>${label}</span><b>${value}</b></div>`).join("");
 }
 
@@ -190,6 +203,59 @@ function renderProducts() {
   $("#productsTable").innerHTML = rows || `<tr><td colspan="7"><div class="empty-panel"><b>لا توجد نتائج</b><span>غير البحث أو الفلتر.</span></div></td></tr>`;
 }
 
+const statusLabels = {
+  new: "جديد",
+  processing: "قيد التجهيز",
+  shipped: "تم الشحن",
+  completed: "مكتمل",
+  cancelled: "ملغي",
+};
+
+const paymentLabels = {
+  pending: "بانتظار الدفع",
+  paid: "مدفوع",
+  failed: "فشل الدفع",
+  refunded: "مسترجع",
+};
+
+function filteredOrders() {
+  const query = $("#orderSearch")?.value.trim().toLowerCase() || "";
+  const status = $("#orderStatusFilter")?.value || "all";
+  return adminState.orders.filter((order) => {
+    const haystack = `${order.order_number || ""} ${order.customer_name || ""} ${order.customer_phone || ""}`.toLowerCase();
+    return (!query || haystack.includes(query)) && (status === "all" || order.status === status);
+  });
+}
+
+function renderOrders() {
+  const table = $("#ordersTable");
+  if (!table) return;
+  const rows = filteredOrders().map((order) => `
+    <tr>
+      <td>
+        <b dir="ltr">${escapeHtml(order.order_number || order.id)}</b>
+        <small>${new Date(order.created_at).toLocaleString("ar-KW")}</small>
+      </td>
+      <td>${escapeHtml(order.customer_name || "-")}</td>
+      <td dir="ltr">${escapeHtml(order.customer_phone || "-")}</td>
+      <td>${money(order.total_kwd)}</td>
+      <td>${escapeHtml(paymentLabels[order.payment_status] || order.payment_status || "-")}</td>
+      <td>
+        <select class="status-select" data-order-status="${order.id}">
+          ${Object.entries(statusLabels).map(([value, label]) => `<option value="${value}" ${order.status === value ? "selected" : ""}>${label}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <div class="row-actions">
+          <button class="small-button" type="button" data-order="${order.id}">تفاصيل</button>
+          <a class="small-button" href="https://wa.me/${String(order.customer_phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`مرحباً، بخصوص طلبك ${order.order_number || ""} من أوتوبنز`)}" target="_blank" rel="noreferrer">واتساب</a>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+  table.innerHTML = rows || `<tr><td colspan="7"><div class="empty-panel"><b>ما في طلبات</b><span>الطلبات الجديدة ستظهر هنا بعد إتمام العميل للطلب.</span></div></td></tr>`;
+}
+
 function renderOptions() {
   $("#productBrand").innerHTML = `<option value="">بدون ماركة</option>${adminState.brands.map((brand) => (
     `<option value="${brand.id}">${escapeHtml(brand.name_ar)} — ${escapeHtml(brand.name_en || brand.slug)}</option>`
@@ -206,6 +272,52 @@ function renderEverything() {
   renderStats();
   renderOptions();
   renderProducts();
+  renderOrders();
+}
+
+function openOrderModal(order) {
+  $("#orderModalTitle").textContent = order.order_number || "تفاصيل الطلب";
+  const items = order.order_items || [];
+  $("#orderDetail").innerHTML = `
+    <div class="order-meta">
+      <div><span>العميل</span><b>${escapeHtml(order.customer_name || "-")}</b></div>
+      <div><span>الهاتف</span><b dir="ltr">${escapeHtml(order.customer_phone || "-")}</b></div>
+      <div><span>البريد</span><b>${escapeHtml(order.customer_email || "-")}</b></div>
+      <div><span>الإجمالي</span><b>${money(order.total_kwd)}</b></div>
+    </div>
+    <div class="order-address">
+      <span>العنوان</span>
+      <p>${escapeHtml([order.shipping_country, order.shipping_city, order.shipping_address].filter(Boolean).join(" - "))}</p>
+      ${order.notes ? `<p>${escapeHtml(order.notes)}</p>` : ""}
+    </div>
+    <div class="order-items">
+      ${items.map((item) => `
+        <div class="order-item">
+          <b>${escapeHtml(item.product_title || item.product_slug || "-")}</b>
+          <span>${Number(item.quantity || 0)} × ${money(item.unit_price_kwd)}</span>
+          <strong>${money(item.total_kwd)}</strong>
+        </div>
+      `).join("") || `<div class="empty-panel"><b>لا توجد منتجات مرفقة</b></div>`}
+    </div>
+  `;
+  $("#orderModal").classList.remove("hidden");
+  $("#orderModal").setAttribute("aria-hidden", "false");
+}
+
+function closeOrderModal() {
+  $("#orderModal").classList.add("hidden");
+  $("#orderModal").setAttribute("aria-hidden", "true");
+}
+
+async function updateOrderStatus(id, status) {
+  await supabaseRest(`orders?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ status }),
+  });
+  const order = adminState.orders.find((item) => String(item.id) === String(id));
+  if (order) order.status = status;
+  renderStats();
 }
 
 function openProductModal(product = null) {
@@ -381,10 +493,16 @@ function bindEvents() {
 
   $("#productSearch").addEventListener("input", renderProducts);
   $("#activeFilter").addEventListener("change", renderProducts);
+  $("#orderSearch").addEventListener("input", renderOrders);
+  $("#orderStatusFilter").addEventListener("change", renderOrders);
   $("#newProductButton").addEventListener("click", () => openProductModal());
   $("#closeModalButton").addEventListener("click", closeProductModal);
   $("#productModal").addEventListener("click", (event) => {
     if (event.target === $("#productModal")) closeProductModal();
+  });
+  $("#closeOrderModalButton").addEventListener("click", closeOrderModal);
+  $("#orderModal").addEventListener("click", (event) => {
+    if (event.target === $("#orderModal")) closeOrderModal();
   });
   $("#productTitle").addEventListener("input", () => {
     if (!$("#productId").value) $("#productSlug").value = slugify($("#productTitle").value);
@@ -396,6 +514,24 @@ function bindEvents() {
     if (!button) return;
     const product = adminState.products.find((item) => String(item.id) === String(button.dataset.edit));
     if (product) openProductModal(product);
+  });
+  $("#ordersTable").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-order]");
+    if (!button) return;
+    const order = adminState.orders.find((item) => String(item.id) === String(button.dataset.order));
+    if (order) openOrderModal(order);
+  });
+  $("#ordersTable").addEventListener("change", async (event) => {
+    const select = event.target.closest("[data-order-status]");
+    if (!select) return;
+    select.disabled = true;
+    try {
+      await updateOrderStatus(select.dataset.orderStatus, select.value);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      select.disabled = false;
+    }
   });
 }
 

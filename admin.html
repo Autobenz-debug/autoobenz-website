@@ -19,7 +19,7 @@
           <form id="loginForm" class="login-form">
             <label>
               البريد الإلكتروني
-              <input id="loginEmail" type="email" autocomplete="email" value="autobenz@outlook.sa" required />
+              <input id="loginEmail" type="email" autocomplete="email" value="almnesiy_501@hotmail.com" required />
             </label>
             <label>
               كلمة المرور
@@ -92,12 +92,35 @@
             <div class="panel-head">
               <div>
                 <h2>الطلبات</h2>
-                <p>جاهزة للمرحلة القادمة بعد ربط صفحة الدفع.</p>
+                <p>طلبات العملاء من صفحة إتمام الطلب.</p>
+              </div>
+              <div class="toolbar">
+                <input id="orderSearch" type="search" placeholder="بحث باسم العميل أو الهاتف..." />
+                <select id="orderStatusFilter">
+                  <option value="all">كل الطلبات</option>
+                  <option value="new">جديد</option>
+                  <option value="processing">قيد التجهيز</option>
+                  <option value="shipped">تم الشحن</option>
+                  <option value="completed">مكتمل</option>
+                  <option value="cancelled">ملغي</option>
+                </select>
               </div>
             </div>
-            <div class="empty-panel">
-              <b>ما في طلبات حتى الآن</b>
-              <span>بعد ربط SadadPay راح تظهر الطلبات هنا تلقائياً.</span>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الطلب</th>
+                    <th>العميل</th>
+                    <th>الهاتف</th>
+                    <th>الإجمالي</th>
+                    <th>الدفع</th>
+                    <th>الحالة</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="ordersTable"></tbody>
+              </table>
             </div>
           </section>
         </div>
@@ -170,6 +193,19 @@
           </div>
           <p class="form-message span-2" id="productMessage"></p>
         </form>
+      </div>
+    </div>
+
+    <div class="modal hidden" id="orderModal" aria-hidden="true">
+      <div class="modal-panel order-modal-panel">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">تفاصيل الطلب</p>
+            <h2 id="orderModalTitle">طلب جديد</h2>
+          </div>
+          <button class="ghost-button" id="closeOrderModalButton" type="button">إغلاق</button>
+        </div>
+        <div class="order-detail" id="orderDetail"></div>
       </div>
     </div>
 

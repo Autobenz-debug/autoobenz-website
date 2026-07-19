@@ -116,6 +116,32 @@ const supabaseFetch = async (path) => {
   return response.json();
 };
 
+const readResponse = async (response) => {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+};
+
+const supabaseWrite = async (path, options = {}) => {
+  const config = window.AUTOOBENZ_SUPABASE;
+  if (!config?.url || !config?.publishableKey) throw new Error("Supabase is not configured.");
+  const response = await fetch(`${config.url}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      ...supabaseHeaders(),
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const body = await readResponse(response);
+  if (!response.ok) throw new Error(body?.message || body || `Supabase ${response.status}`);
+  return body;
+};
+
 const localData = async () => {
   const [products, categories, brands, types] = await Promise.all([
     fetch("/assets/data/products.json").then((res) => res.json()),
@@ -139,6 +165,7 @@ const normalizeSupabaseProduct = (product) => {
     .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
     .map((image) => image.image_url);
   return {
+    db_id: product.id,
     id: product.old_id ? Number(product.old_id) : product.id,
     name: product.title_ar || product.title_en || "",
     slug: product.slug,
@@ -184,6 +211,7 @@ const supabaseData = async () => {
 function navigate(path) {
   history.pushState(null, "", path);
   mobileNav.classList.remove("open");
+  closeCart();
   render();
 }
 
@@ -281,7 +309,12 @@ function renderCart() {
     const product = state.products.find((entry) => entry.id === item.id);
     return product ? `${item.qty} × ${product.name} - ${money(product.price)}` : "";
   }).filter(Boolean).join("\n");
-  document.querySelector("#checkoutLink").href = `https://wa.me/96550304591?text=${encodeURIComponent(`مرحبا، أريد طلب:\n${message}\nالإجمالي: ${money(total)}`)}`;
+  const checkoutLink = document.querySelector("#checkoutLink");
+  checkoutLink.href = state.cart.length ? "/checkout" : "/shop";
+  checkoutLink.textContent = state.cart.length ? "إتمام الطلب" : "تصفح المنتجات";
+  checkoutLink.setAttribute("data-link", "");
+  checkoutLink.removeAttribute("target");
+  checkoutLink.removeAttribute("rel");
 }
 
 document.querySelector("#cartItems").addEventListener("click", (event) => {
@@ -615,6 +648,156 @@ function renderVin() {
   });
 }
 
+const cartLines = () => state.cart.map((item) => {
+  const product = state.products.find((entry) => entry.id === item.id);
+  return product ? {
+    product,
+    qty: item.qty,
+    lineTotal: Number(product.price || 0) * item.qty,
+  } : null;
+}).filter(Boolean);
+
+const cartSubtotal = () => cartLines().reduce((sum, item) => sum + item.lineTotal, 0);
+
+function renderCheckout() {
+  const lines = cartLines();
+  if (!lines.length) {
+    app.innerHTML = `
+      <section class="checkout-page">
+        <div class="container">
+          <div class="empty-state">
+            <b>السلة فارغة</b>
+            <p>أضف المنتجات أولاً ثم ارجع لإتمام الطلب.</p>
+            <a class="primary-button" href="/shop" data-link>تصفح المنتجات</a>
+          </div>
+        </div>
+      </section>
+    `;
+    return;
+  }
+  const subtotal = cartSubtotal();
+  app.innerHTML = `
+    <section class="checkout-page">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h1 class="page-title">إتمام الطلب</h1>
+            <p>اكتب بياناتك، ونستلم الطلب في لوحة التحكم مباشرة.</p>
+          </div>
+        </div>
+        <div class="checkout-grid">
+          <form class="checkout-form" id="checkoutForm">
+            <label>الاسم الكامل<input name="customer_name" required autocomplete="name"></label>
+            <label>رقم الهاتف<input name="customer_phone" required inputmode="tel" dir="ltr" placeholder="+965 0000 0000"></label>
+            <label>البريد الإلكتروني<input name="customer_email" type="email" autocomplete="email"></label>
+            <label>الدولة<input name="shipping_country" value="Kuwait" required></label>
+            <label>المدينة / المنطقة<input name="shipping_city" required></label>
+            <label class="span-2">العنوان التفصيلي<textarea name="shipping_address" rows="4" required></textarea></label>
+            <label class="span-2">ملاحظات إضافية<textarea name="notes" rows="3" placeholder="موديل السيارة، وقت التواصل المناسب، أو أي ملاحظات"></textarea></label>
+            <button class="primary-button span-2" type="submit">تأكيد الطلب</button>
+            <p class="checkout-message span-2" id="checkoutMessage"></p>
+          </form>
+          <aside class="checkout-summary">
+            <h2>ملخص الطلب</h2>
+            <div class="summary-lines">
+              ${lines.map(({ product, qty, lineTotal }) => `
+                <div class="summary-line">
+                  <img src="${imgLocal(productImages(product)[0])}" alt="">
+                  <div>
+                    <b>${escapeHtml(product.name)}</b>
+                    <span>${qty} × ${money(product.price)}</span>
+                  </div>
+                  <strong>${money(lineTotal)}</strong>
+                </div>
+              `).join("")}
+            </div>
+            <div class="summary-total"><span>الإجمالي</span><b>${money(subtotal)}</b></div>
+            <p>الدفع حالياً يتم بعد تأكيد الطلب. في الخطوة القادمة نربطه مع SadadPay.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+  `;
+  document.querySelector("#checkoutForm").addEventListener("submit", submitCheckout);
+}
+
+async function submitCheckout(event) {
+  event.preventDefault();
+  const message = document.querySelector("#checkoutMessage");
+  const lines = cartLines();
+  if (!lines.length) return;
+  message.className = "checkout-message";
+  message.textContent = "جاري حفظ الطلب...";
+  const formData = new FormData(event.currentTarget);
+  const subtotal = cartSubtotal();
+  const orderNumber = `AB-${Date.now().toString().slice(-8)}`;
+  try {
+    const orderRows = await supabaseWrite("orders", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        order_number: orderNumber,
+        customer_name: formData.get("customer_name"),
+        customer_phone: formData.get("customer_phone"),
+        customer_email: formData.get("customer_email"),
+        shipping_country: formData.get("shipping_country") || "Kuwait",
+        shipping_city: formData.get("shipping_city"),
+        shipping_address: formData.get("shipping_address"),
+        notes: formData.get("notes"),
+        subtotal_kwd: subtotal,
+        shipping_kwd: 0,
+        total_kwd: subtotal,
+        status: "new",
+        payment_status: "pending",
+        payment_method: "cash_or_link",
+      }),
+    });
+    const order = orderRows?.[0];
+    if (!order?.id) throw new Error("تعذر إنشاء رقم الطلب.");
+    await supabaseWrite("order_items", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(lines.map(({ product, qty, lineTotal }) => ({
+        order_id: order.id,
+        product_id: product.db_id || null,
+        product_old_id: String(product.id),
+        product_slug: product.slug,
+        product_title: product.name,
+        quantity: qty,
+        unit_price_kwd: Number(product.price || 0),
+        total_kwd: lineTotal,
+      }))),
+    });
+    state.cart = [];
+    saveCart();
+    navigate(`/order-success?order=${encodeURIComponent(orderNumber)}`);
+  } catch (error) {
+    message.classList.add("error");
+    message.textContent = `تعذر حفظ الطلب: ${error.message}`;
+  }
+}
+
+function renderOrderSuccess() {
+  const params = new URLSearchParams(location.search);
+  const orderNumber = params.get("order") || "تم استلام الطلب";
+  app.innerHTML = `
+    <section class="checkout-page">
+      <div class="container">
+        <div class="success-panel">
+          <span>✓</span>
+          <h1>تم استلام طلبك</h1>
+          <p>رقم الطلب: <b dir="ltr">${escapeHtml(orderNumber)}</b></p>
+          <p>راح نتواصل معك قريباً لتأكيد التفاصيل والدفع.</p>
+          <div class="product-actions">
+            <a class="primary-button" href="/shop" data-link>متابعة التسوق</a>
+            <a class="secondary-button" href="https://wa.me/96550304591?text=${encodeURIComponent(`مرحباً، أريد متابعة الطلب ${orderNumber}`)}" target="_blank" rel="noreferrer">متابعة عبر واتساب</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
 function renderNotFound() {
   app.innerHTML = `<div class="container"><div class="empty-state"><b>الصفحة غير موجودة</b><p>ارجع للمتجر وتصفح المنتجات.</p><a class="primary-button" href="/shop" data-link>المتجر</a></div></div>`;
 }
@@ -635,6 +818,8 @@ function render() {
   setActiveNav();
   if (location.pathname === "/" || location.pathname === "/index.html") renderHome();
   else if (location.pathname === "/shop") renderShop();
+  else if (location.pathname === "/checkout") renderCheckout();
+  else if (location.pathname === "/order-success") renderOrderSuccess();
   else if (location.pathname === "/vin-check") renderVin();
   else if (location.pathname.startsWith("/product/")) renderProduct(decodeURIComponent(location.pathname.split("/product/")[1]));
   else renderNotFound();
