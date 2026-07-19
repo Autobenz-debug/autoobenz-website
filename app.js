@@ -87,6 +87,12 @@ const productCategories = (product) => {
     .filter(Boolean);
 };
 
+const preloadImage = (src) => {
+  if (!src) return;
+  const image = new Image();
+  image.src = src;
+};
+
 const brandModels = (brandSlug) => {
   const root = state.categories.find((category) => category.slug === brandSlug && Number(category.parent) === 0);
   if (!root) return [];
@@ -190,6 +196,16 @@ document.addEventListener("click", (event) => {
   navigate(`${url.pathname}${url.search}`);
 });
 
+document.addEventListener("pointerover", (event) => {
+  const card = event.target.closest("[data-prefetch-image]");
+  if (card) preloadImage(card.dataset.prefetchImage);
+});
+
+document.addEventListener("touchstart", (event) => {
+  const card = event.target.closest("[data-prefetch-image]");
+  if (card) preloadImage(card.dataset.prefetchImage);
+}, { passive: true });
+
 window.addEventListener("popstate", render);
 
 document.querySelector("#menuButton").addEventListener("click", () => {
@@ -283,7 +299,7 @@ function productCard(product) {
   const brand = productBrand(product);
   const discount = product.regular_price > product.price ? Math.round((1 - product.price / product.regular_price) * 100) : 0;
   return `
-    <a class="product-card" href="/product/${product.slug}" data-link>
+    <a class="product-card" href="/product/${product.slug}" data-link data-prefetch-image="${imgLocal(productImages(product)[0])}">
       <div class="product-image">
         <img src="${imgLocal(productImages(product)[0])}" alt="${escapeHtml(product.name)}" loading="lazy">
         ${discount ? `<span class="sale-badge">خصم ${discount}%</span>` : ""}
@@ -533,7 +549,7 @@ function renderProduct(slug) {
         <nav class="breadcrumbs"><a href="/" data-link>الرئيسية</a> / <a href="/shop" data-link>المتجر</a></nav>
         <div class="product-detail">
           <div>
-            <div class="gallery-main"><img id="mainImage" src="${imgLocal(productImages(product)[0])}" alt="${escapeHtml(product.name)}"></div>
+            <div class="gallery-main"><img id="mainImage" src="${imgLocal(productImages(product)[0])}" alt="${escapeHtml(product.name)}" loading="eager" fetchpriority="high" decoding="async"></div>
             <div class="thumbs">
               ${productImages(product).map((image, index) => `<button class="${index === 0 ? "active" : ""}" data-image="${imgLocal(image)}"><img src="${imgLocal(image)}" alt=""></button>`).join("")}
             </div>
