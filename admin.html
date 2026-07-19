@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>لوحة تحكم أوتوبنز</title>
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="icon" href="/assets/images/autoobenz-logo.png" />
+    <link rel="preconnect" href="https://dhillppruusgmnshlulp.supabase.co" crossorigin />
+    <link rel="stylesheet" href="/admin.css" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section class="login-view" id="loginView">
+        <div class="login-panel">
+          <img src="/assets/images/autoobenz-logo.png" alt="Autoobenz" />
+          <p class="eyebrow">AUTOOBENZ ADMIN</p>
+          <h1>تسجيل دخول لوحة التحكم</h1>
+          <form id="loginForm" class="login-form">
+            <label>
+              البريد الإلكتروني
+              <input id="loginEmail" type="email" autocomplete="email" value="autobenz@outlook.sa" required />
+            </label>
+            <label>
+              كلمة المرور
+              <input id="loginPassword" type="password" autocomplete="current-password" required />
+            </label>
+            <button type="submit">دخول</button>
+            <p class="form-message" id="loginMessage"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="dashboard-view hidden" id="dashboardView">
+        <aside class="admin-sidebar">
+          <a class="admin-brand" href="/admin.html">
+            <img src="/assets/images/autoobenz-logo.png" alt="Autoobenz" />
+          </a>
+          <nav>
+            <button class="nav-item active" type="button" data-panel="productsPanel">المنتجات</button>
+            <button class="nav-item" type="button" data-panel="ordersPanel">الطلبات</button>
+            <a class="nav-item" href="/" target="_blank" rel="noreferrer">فتح الموقع</a>
+          </nav>
+          <button class="logout-button" id="logoutButton" type="button">تسجيل خروج</button>
+        </aside>
+
+        <div class="admin-main">
+          <header class="admin-top">
+            <div>
+              <p class="eyebrow">لوحة تحكم أوتوبنز</p>
+              <h1>إدارة المتجر</h1>
+            </div>
+            <button class="primary-action" id="newProductButton" type="button">منتج جديد</button>
+          </header>
+
+          <section class="stats-grid" id="statsGrid"></section>
+
+          <section class="panel" id="productsPanel">
+            <div class="panel-head">
+              <div>
+                <h2>المنتجات</h2>
+                <p>تعديل السعر، المخزون، حالة الظهور، والصور.</p>
+              </div>
+              <div class="toolbar">
+                <input id="productSearch" type="search" placeholder="بحث باسم المنتج..." />
+                <select id="activeFilter">
+                  <option value="all">كل المنتجات</option>
+                  <option value="active">المفعلة فقط</option>
+                  <option value="hidden">المخفية فقط</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المنتج</th>
+                    <th>الماركة</th>
+                    <th>القسم</th>
+                    <th>السعر</th>
+                    <th>المخزون</th>
+                    <th>الحالة</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="productsTable"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel hidden" id="ordersPanel">
+            <div class="panel-head">
+              <div>
+                <h2>الطلبات</h2>
+                <p>جاهزة للمرحلة القادمة بعد ربط صفحة الدفع.</p>
+              </div>
+            </div>
+            <div class="empty-panel">
+              <b>ما في طلبات حتى الآن</b>
+              <span>بعد ربط SadadPay راح تظهر الطلبات هنا تلقائياً.</span>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal hidden" id="productModal" aria-hidden="true">
+      <div class="modal-panel">
+        <div class="modal-head">
+          <div>
+            <p class="eyebrow">بيانات المنتج</p>
+            <h2 id="modalTitle">تعديل منتج</h2>
+          </div>
+          <button class="ghost-button" id="closeModalButton" type="button">إغلاق</button>
+        </div>
+        <form id="productForm" class="product-form">
+          <input type="hidden" id="productId" />
+          <label class="span-2">
+            اسم المنتج
+            <input id="productTitle" required />
+          </label>
+          <label>
+            الرابط المختصر
+            <input id="productSlug" required dir="ltr" />
+          </label>
+          <label>
+            السعر د.ك
+            <input id="productPrice" type="number" min="0" step="0.001" required />
+          </label>
+          <label>
+            السعر قبل الخصم
+            <input id="productComparePrice" type="number" min="0" step="0.001" />
+          </label>
+          <label>
+            المخزون
+            <input id="productStock" type="number" min="0" step="1" />
+          </label>
+          <label>
+            الماركة
+            <select id="productBrand"></select>
+          </label>
+          <label>
+            القسم
+            <select id="productType"></select>
+          </label>
+          <label>
+            الموديل/التصنيف
+            <select id="productCategory"></select>
+          </label>
+          <label class="span-2">
+            التصنيفات Slugs
+            <input id="productCatSlugs" dir="ltr" placeholder="body-kit, mercedes-benz" />
+          </label>
+          <label class="span-2">
+            الوصف
+            <textarea id="productDescription" rows="6"></textarea>
+          </label>
+          <div class="check-row">
+            <label><input id="productActive" type="checkbox" /> ظاهر في المتجر</label>
+            <label><input id="productFeatured" type="checkbox" /> الأكثر طلباً</label>
+          </div>
+          <label class="span-2">
+            إضافة صور للمنتج
+            <input id="productImages" type="file" accept="image/*" multiple />
+          </label>
+          <div class="image-list span-2" id="imageList"></div>
+          <div class="form-actions span-2">
+            <button class="danger-button" id="hideProductButton" type="button">إخفاء المنتج</button>
+            <button class="primary-action" type="submit">حفظ التعديل</button>
+          </div>
+          <p class="form-message span-2" id="productMessage"></p>
+        </form>
+      </div>
+    </div>
+
+    <script src="/supabase-config.js"></script>
+    <script src="/admin.js"></script>
+  </body>
+</html>
