@@ -31,14 +31,25 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .topbar { background: var(--accent); color: var(--accent-ink); text-align: center; font-size: 12px; font-weight: 800; padding: 7px 12px; }
 .site-header { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 91%, transparent); backdrop-filter: blur(14px); }
 .header-inner { min-height: 64px; display: flex; align-items: center; gap: 16px; }
-.brand-link img { width: 150px; height: 48px; object-fit: contain; display: block; }
-.desktop-nav { display: flex; align-items: center; gap: 24px; margin-inline-start: 16px; color: var(--ink-2); font-size: 14px; }
-.desktop-nav a:hover, .desktop-nav a.active { color: var(--ink); font-weight: 800; }
+.brand-link { flex: 0 0 auto; display: flex; align-items: center; }
+.brand-link img { width: 150px; height: 48px; object-fit: contain; object-position: right center; display: block; }
+.desktop-nav { display: flex; align-items: center; gap: 10px; margin-inline-start: 16px; color: var(--ink-2); font-size: 14px; }
+.desktop-nav a {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-weight: 600;
+  transition: color .18s ease, background-color .18s ease;
+}
+.desktop-nav a:hover, .desktop-nav a.active { color: var(--ink); background: rgba(255,255,255,.045); }
 .header-actions { margin-inline-start: auto; display: flex; align-items: center; gap: 12px; }
 .whatsapp-link { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 14px; }
 .whatsapp-link svg { fill: currentColor; stroke: none; }
 .cart-button {
   position: relative;
+  flex: 0 0 auto;
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -587,8 +598,11 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 @media (max-width: 920px) {
   .desktop-nav, .whatsapp-link { display: none; }
   .mobile-only { display: grid; }
-  .header-inner { gap: 10px; }
-  .brand-link img { width: 128px; height: 42px; }
+  .header-inner { min-height: 64px; gap: 10px; justify-content: flex-start; }
+  .mobile-only { order: 1; margin-inline-start: -8px; }
+  .brand-link { order: 2; margin-inline: 0; }
+  .brand-link img { width: 120px; height: 44px; object-position: right center; }
+  .header-actions { order: 3; margin-inline-start: auto; }
   .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .car-finder > div { grid-template-columns: 1fr; }
   .brand-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
