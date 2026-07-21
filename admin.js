@@ -288,17 +288,29 @@ function modelOptionsForBrand(brandId) {
     .sort((a, b) => String(a.name_ar || a.name_en || a.slug).localeCompare(String(b.name_ar || b.name_en || b.slug)));
 }
 
-function renderModelOptions(selectedId = $("#productCategory")?.value || "") {
+function selectedModelIdsForProduct(product) {
+  if (!product) return [];
+  const selected = new Set();
+  if (product.category_id) selected.add(String(product.category_id));
+  const slugs = new Set(product.cat_slugs || []);
+  adminState.categories.forEach((category) => {
+    if (slugs.has(category.slug)) selected.add(String(category.id));
+  });
+  return [...selected];
+}
+
+function renderModelOptions(selectedIds = []) {
   const brandId = $("#productBrand")?.value || "";
+  const selectedSet = new Set(Array.isArray(selectedIds) ? selectedIds.map(String) : [String(selectedIds)].filter(Boolean));
   const options = modelOptionsForBrand(brandId);
-  const selectedCategory = adminState.categories.find((category) => String(category.id) === String(selectedId));
-  const entries = selectedCategory && !options.some((category) => String(category.id) === String(selectedId))
-    ? [selectedCategory, ...options]
-    : options;
+  const extraSelected = adminState.categories.filter((category) => (
+    selectedSet.has(String(category.id)) && !options.some((option) => String(option.id) === String(category.id))
+  ));
+  const entries = [...extraSelected, ...options];
   $("#productCategory").disabled = !brandId;
   $("#productCategory").innerHTML = [
-    `<option value="">${brandId ? "بدون موديل" : "اختر الماركة أولاً"}</option>`,
-    ...entries.map((category) => `<option value="${category.id}" ${String(category.id) === String(selectedId) ? "selected" : ""}>${escapeHtml(category.name_ar || category.name_en || category.slug)}</option>`),
+    `<option value="" disabled>${brandId ? "بدون موديل" : "اختر الماركة أولاً"}</option>`,
+    ...entries.map((category) => `<option value="${category.id}" ${selectedSet.has(String(category.id)) ? "selected" : ""}>${escapeHtml(category.name_ar || category.name_en || category.slug)}</option>`),
   ].join("");
 }
 
@@ -365,8 +377,7 @@ function openProductModal(product = null) {
   $("#productStock").value = product?.stock_quantity ?? 999;
   $("#productBrand").value = product?.brand_id || "";
   $("#productType").value = product?.type_id || "";
-  $("#productCategory").value = product?.category_id || "";
-  renderModelOptions(product?.category_id || "");
+  renderModelOptions(selectedModelIdsForProduct(product));
   $("#productCatSlugs").value = (product?.cat_slugs || []).join(", ");
   $("#productDescription").value = product?.description_ar || product?.description_en || "";
   $("#productActive").checked = product?.is_active ?? true;
@@ -392,14 +403,20 @@ function productPayload() {
   const slug = $("#productSlug").value.trim() || slugify(title);
   const brandId = $("#productBrand").value || null;
   const typeId = $("#productType").value || null;
-  const categoryId = $("#productCategory").value || null;
+  const selectedCategoryIds = [...$("#productCategory").selectedOptions]
+    .map((option) => option.value)
+    .filter(Boolean);
+  const categoryId = selectedCategoryIds[0] || null;
   const selectedBrand = adminState.brands.find((brand) => String(brand.id) === String(brandId));
   const selectedType = adminState.types.find((type) => String(type.id) === String(typeId));
-  const selectedCategory = adminState.categories.find((category) => String(category.id) === String(categoryId));
+  const selectedCategories = selectedCategoryIds
+    .map((id) => adminState.categories.find((category) => String(category.id) === String(id)))
+    .filter(Boolean);
+  const selectedCategory = selectedCategories[0];
   const catSlugs = [...new Set([
     selectedBrand?.slug,
     selectedType?.slug,
-    selectedCategory?.slug,
+    ...selectedCategories.map((category) => category.slug),
     ...$("#productCatSlugs").value
     .split(",")
     .map((item) => item.trim())
@@ -552,6 +569,13 @@ function bindEvents() {
   });
   $("#productBrand").addEventListener("change", () => {
     renderModelOptions("");
+  });
+  $("#productCategory").addEventListener("mousedown", (event) => {
+    const option = event.target.closest("option");
+    if (!option || option.disabled) return;
+    event.preventDefault();
+    option.selected = !option.selected;
+    $("#productCategory").dispatchEvent(new Event("change", { bubbles: true }));
   });
   $("#productForm").addEventListener("submit", saveProduct);
   $("#hideProductButton").addEventListener("click", hideProduct);
