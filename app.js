@@ -11,6 +11,13 @@ const cartCount = document.querySelector("#cartCount");
 const cartDrawer = document.querySelector("#cartDrawer");
 const mobileNav = document.querySelector("#mobileNav");
 
+document.documentElement.classList.add("app-booting");
+app.innerHTML = `
+  <section class="app-loading" aria-label="جاري تحميل الموقع">
+    <span></span>
+  </section>
+`;
+
 if ("scrollRestoration" in history) {
   history.scrollRestoration = "manual";
 }
@@ -224,12 +231,15 @@ function navigate(path) {
 }
 
 document.addEventListener("click", (event) => {
-  const link = event.target.closest("a[data-link]");
+  const link = event.target.closest("a[href]");
   if (!link) return;
-  const url = new URL(link.href);
+  if (link.target || link.hasAttribute("download")) return;
+  const url = new URL(link.href, location.href);
   if (url.origin !== location.origin) return;
+  if (url.pathname.endsWith(".html") && url.pathname !== "/index.html") return;
+  if (url.hash && url.pathname === location.pathname && url.search === location.search) return;
   event.preventDefault();
-  navigate(`${url.pathname}${url.search}`);
+  navigate(`${url.pathname}${url.search}${url.hash}`);
 });
 
 document.addEventListener("pointerover", (event) => {
@@ -1070,10 +1080,12 @@ async function boot() {
   state.types = data.types;
   renderFooterLinks();
   render();
+  document.documentElement.classList.remove("app-booting");
   requestAnimationFrame(resetPageScroll);
   setTimeout(resetPageScroll, 120);
 }
 
 boot().catch((error) => {
+  document.documentElement.classList.remove("app-booting");
   app.innerHTML = `<div class="container"><div class="empty-state"><b>تعذر تحميل بيانات الموقع</b><p>${escapeHtml(error.message)}</p></div></div>`;
 });

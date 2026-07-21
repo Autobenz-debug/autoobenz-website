@@ -28,6 +28,23 @@ button, input, select { font: inherit; }
 button { cursor: pointer; }
 svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .container { width: min(1180px, calc(100% - 32px)); margin-inline: auto; }
+#app { min-height: calc(100svh - 128px); }
+.app-loading {
+  min-height: calc(100svh - 128px);
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+}
+.app-loading span {
+  width: 42px;
+  height: 42px;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: app-spin .75s linear infinite;
+}
+html.app-booting .site-footer { visibility: hidden; }
+@keyframes app-spin { to { transform: rotate(360deg); } }
 .topbar { background: var(--accent); color: var(--accent-ink); text-align: center; font-size: 12px; font-weight: 800; padding: 7px 12px; }
 .site-header { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 91%, transparent); backdrop-filter: blur(14px); }
 .header-inner { min-height: 64px; display: flex; align-items: center; gap: 16px; }
