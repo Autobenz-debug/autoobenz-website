@@ -35,8 +35,8 @@ async function sadadFetch(path, options = {}) {
 }
 
 async function getAccessToken() {
-  const clientKey = process.env.SADAD_CLIENT_KEY;
-  const clientSecret = process.env.SADAD_CLIENT_SECRET;
+  const clientKey = cleanSecret(process.env.SADAD_CLIENT_KEY);
+  const clientSecret = cleanSecret(process.env.SADAD_CLIENT_SECRET);
   if (!clientKey || !clientSecret) {
     throw new Error("SadadPay credentials are missing in Vercel Environment Variables.");
   }
@@ -59,6 +59,10 @@ async function getAccessToken() {
   return accessToken;
 }
 
+function cleanSecret(value) {
+  return String(value || "").replace(/\s+/g, "");
+}
+
 function firstValue(data, names) {
   const candidates = [
     data,
@@ -76,8 +80,8 @@ function firstValue(data, names) {
 }
 
 async function supabasePatchOrder(orderId, payload) {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  const supabaseUrl = String(process.env.SUPABASE_URL || "").trim();
+  const serviceKey = cleanSecret(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY);
   if (!supabaseUrl || !serviceKey || !orderId) return;
 
   await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}`, {
@@ -162,8 +166,7 @@ module.exports = async function handler(req, res) {
   } catch (error) {
     return json(res, 500, {
       ok: false,
-      error: error.message || "SadadPay payment creation failed.",
-      details: error.data || null,
+      error: "تعذر إنشاء رابط الدفع. تأكد من مفاتيح SadadPay و Supabase في Vercel.",
     });
   }
 };

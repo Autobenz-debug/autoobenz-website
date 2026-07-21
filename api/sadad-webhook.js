@@ -24,8 +24,8 @@ function pick(obj, names) {
 }
 
 async function supabaseUpdateByInvoice(invoiceId, payload) {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  const supabaseUrl = String(process.env.SUPABASE_URL || "").trim();
+  const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "").replace(/\s+/g, "");
   if (!supabaseUrl || !serviceKey || !invoiceId) return false;
 
   const response = await fetch(`${supabaseUrl}/rest/v1/orders?sadad_invoice_id=eq.${encodeURIComponent(invoiceId)}`, {
