@@ -771,6 +771,30 @@ function renderCheckout() {
             <label>المدينة / المنطقة<select name="shipping_city" id="shippingCity" required>${cityOptions("الكويت")}</select></label>
             <label class="span-2">العنوان التفصيلي<textarea name="shipping_address" rows="4" required></textarea></label>
             <label class="span-2">ملاحظات إضافية<textarea name="notes" rows="3" placeholder="موديل السيارة، وقت التواصل المناسب، أو أي ملاحظات"></textarea></label>
+            <div class="payment-options span-2" role="radiogroup" aria-label="طريقة الدفع">
+              <p>طريقة الدفع</p>
+              <label class="payment-option">
+                <input type="radio" name="payment_method" value="sadadpay" checked>
+                <span>
+                  <b>SadadPay Payment</b>
+                  <small>دفع إلكتروني آمن عبر سداد</small>
+                </span>
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="payment_method" value="deema">
+                <span>
+                  <b>Deema Payment</b>
+                  <small>قساط ميسرة، بدون فوائد</small>
+                </span>
+              </label>
+              <label class="payment-option">
+                <input type="radio" name="payment_method" value="taly">
+                <span>
+                  <b>Taly Payment</b>
+                  <small>أقساط ميسرة، بدون فوائد</small>
+                </span>
+              </label>
+            </div>
             <button class="primary-button span-2" type="submit">تأكيد الطلب</button>
             <p class="checkout-message span-2" id="checkoutMessage"></p>
           </form>
@@ -789,7 +813,6 @@ function renderCheckout() {
               `).join("")}
             </div>
             <div class="summary-total"><span>الإجمالي</span><b>${money(subtotal)}</b></div>
-            <p>الدفع حالياً يتم بعد تأكيد الطلب. في الخطوة القادمة نربطه مع SadadPay.</p>
           </aside>
         </div>
       </div>
@@ -811,6 +834,7 @@ async function submitCheckout(event) {
   message.textContent = "جاري حفظ الطلب...";
   if (submitButton) submitButton.disabled = true;
   const formData = new FormData(event.currentTarget);
+  const paymentMethod = formData.get("payment_method") || "sadadpay";
   const subtotal = cartSubtotal();
   const orderNumber = `AB-${Date.now().toString().slice(-8)}`;
   try {
@@ -831,7 +855,7 @@ async function submitCheckout(event) {
         total_kwd: subtotal,
         status: "new",
         payment_status: "pending",
-        payment_method: "sadadpay",
+        payment_method: paymentMethod,
       }),
     });
     const order = orderRows?.[0];
@@ -850,6 +874,13 @@ async function submitCheckout(event) {
         total_kwd: lineTotal,
       }))),
     });
+    if (paymentMethod !== "sadadpay") {
+      state.cart = [];
+      saveCart();
+      navigate(`/order-success?order=${encodeURIComponent(orderNumber)}&payment=${encodeURIComponent(paymentMethod)}`);
+      return;
+    }
+
     message.textContent = "جاري تحويلك إلى صفحة الدفع...";
     const sadadResponse = await fetch("/api/sadad-create-payment", {
       method: "POST",
