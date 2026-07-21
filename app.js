@@ -736,6 +736,34 @@ const cityOptions = (country) => (shippingLocations[country] || [])
   .map((city) => `<option value="${city}">${city}</option>`)
   .join("");
 
+const countryDialCodes = {
+  "الكويت": "+965",
+  "السعودية": "+966",
+  "الإمارات": "+971",
+  "قطر": "+974",
+  "البحرين": "+973",
+  "عمان": "+968",
+};
+
+function syncPhoneDialCode(country, previousCountry = "") {
+  const phoneInput = document.querySelector("#customerPhone");
+  if (!phoneInput) return;
+  const nextCode = countryDialCodes[country] || "+965";
+  const previousCode = countryDialCodes[previousCountry] || "";
+  const current = phoneInput.value.trim();
+  if (!current || current === previousCode) {
+    phoneInput.value = `${nextCode} `;
+    return;
+  }
+  if (previousCode && current.startsWith(previousCode)) {
+    phoneInput.value = `${nextCode} ${current.slice(previousCode.length).trim()}`.trimEnd() + " ";
+    return;
+  }
+  if (!current.startsWith("+")) {
+    phoneInput.value = `${nextCode} ${current}`;
+  }
+}
+
 function renderCheckout() {
   const lines = cartLines();
   if (!lines.length) {
@@ -765,7 +793,7 @@ function renderCheckout() {
         <div class="checkout-grid">
           <form class="checkout-form" id="checkoutForm">
             <label>الاسم الكامل<input name="customer_name" required autocomplete="name"></label>
-            <label>رقم الهاتف<input name="customer_phone" required inputmode="tel" dir="ltr" placeholder="+965 0000 0000"></label>
+            <label>رقم الهاتف<input name="customer_phone" id="customerPhone" required inputmode="tel" dir="ltr" value="+965 " placeholder="+965 0000 0000"></label>
             <label>البريد الإلكتروني<input name="customer_email" type="email" autocomplete="email"></label>
             <label>الدولة<select name="shipping_country" id="shippingCountry" required>${countryOptions()}</select></label>
             <label>المدينة / المنطقة<select name="shipping_city" id="shippingCity" required>${cityOptions("الكويت")}</select></label>
@@ -818,8 +846,14 @@ function renderCheckout() {
       </div>
     </section>
   `;
-  document.querySelector("#shippingCountry").addEventListener("change", (event) => {
+  const shippingCountry = document.querySelector("#shippingCountry");
+  shippingCountry.dataset.previousCountry = shippingCountry.value;
+  syncPhoneDialCode(shippingCountry.value);
+  shippingCountry.addEventListener("change", (event) => {
+    const previousCountry = event.currentTarget.dataset.previousCountry || "";
     document.querySelector("#shippingCity").innerHTML = cityOptions(event.target.value);
+    syncPhoneDialCode(event.target.value, previousCountry);
+    event.currentTarget.dataset.previousCountry = event.target.value;
   });
   document.querySelector("#checkoutForm").addEventListener("submit", submitCheckout);
 }
