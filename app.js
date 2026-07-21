@@ -10,6 +10,7 @@ const app = document.querySelector("#app");
 const cartCount = document.querySelector("#cartCount");
 const cartDrawer = document.querySelector("#cartDrawer");
 const mobileNav = document.querySelector("#mobileNav");
+let revealObserver = null;
 
 document.documentElement.classList.add("app-booting");
 app.innerHTML = `
@@ -1048,6 +1049,14 @@ function renderFooterLinks() {
   document.querySelector("#footerBrands").innerHTML = state.brands.slice(0, 6).map((brand) => `<li><a href="/shop?brand=${brand.slug}" data-link>${brand.ar}</a></li>`).join("");
 }
 
+function setSiteData(data) {
+  state.products = data.products;
+  state.categories = data.categories;
+  state.brands = data.brands;
+  state.types = data.types;
+  renderFooterLinks();
+}
+
 function setActiveNav() {
   const path = location.pathname;
   document.querySelectorAll(".desktop-nav a").forEach((link) => {
@@ -1055,7 +1064,43 @@ function setActiveNav() {
   });
 }
 
-function render() {
+function applyRevealMotion() {
+  if (revealObserver) revealObserver.disconnect();
+  const selector = [
+    ".center-title",
+    ".section-head",
+    ".categories-head",
+    ".brand-card",
+    ".promo-card",
+    ".product-card",
+    ".category-tile",
+    ".benefits-grid > div",
+    ".instagram-section .container",
+    ".product-detail",
+    ".checkout-form",
+    ".checkout-summary",
+    ".success-panel",
+  ].join(",");
+  const elements = [...app.querySelectorAll(selector)];
+  elements.forEach((element, index) => {
+    element.classList.add("reveal-item");
+    element.style.setProperty("--reveal-delay", `${Math.min(index % 10, 7) * 45}ms`);
+  });
+  if (!("IntersectionObserver" in window)) {
+    elements.forEach((element) => element.classList.add("is-visible"));
+    return;
+  }
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      revealObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: "0px 0px -36px 0px" });
+  elements.forEach((element) => revealObserver.observe(element));
+}
+
+function render(options = {}) {
   setActiveNav();
   if (location.pathname === "/" || location.pathname === "/index.html") renderHome();
   else if (location.pathname === "/shop") renderShop();
@@ -1065,24 +1110,30 @@ function render() {
   else if (location.pathname.startsWith("/product/")) renderProduct(decodeURIComponent(location.pathname.split("/product/")[1]));
   else renderNotFound();
   renderCart();
-  resetPageScroll();
+  applyRevealMotion();
+  if (options.resetScroll !== false) resetPageScroll();
 }
 
 async function boot() {
   resetPageScroll();
-  const data = await supabaseData().catch((error) => {
-    console.warn("Supabase data is not ready yet, using local data.", error);
-    return null;
-  }) || await localData();
-  state.products = data.products;
-  state.categories = data.categories;
-  state.brands = data.brands;
-  state.types = data.types;
-  renderFooterLinks();
+  const data = await localData().catch(async (error) => {
+    console.warn("Local data is not ready, trying Supabase.", error);
+    return supabaseData();
+  });
+  setSiteData(data);
   render();
   document.documentElement.classList.remove("app-booting");
   requestAnimationFrame(resetPageScroll);
   setTimeout(resetPageScroll, 120);
+  supabaseData().then((freshData) => {
+    if (!freshData) return;
+    if (location.pathname === "/checkout") return;
+    if (app.querySelector("input:focus, select:focus, textarea:focus")) return;
+    setSiteData(freshData);
+    render({ resetScroll: false });
+  }).catch((error) => {
+    console.warn("Supabase data refresh failed.", error);
+  });
 }
 
 boot().catch((error) => {

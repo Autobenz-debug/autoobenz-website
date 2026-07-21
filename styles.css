@@ -45,6 +45,29 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 }
 html.app-booting .site-footer { visibility: hidden; }
 @keyframes app-spin { to { transform: rotate(360deg); } }
+.reveal-item {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity .55s ease,
+    transform .55s cubic-bezier(.22, 1, .36, 1),
+    border-color .2s ease,
+    color .2s ease,
+    background-color .2s ease;
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal-item.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-item {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
 .topbar { background: var(--accent); color: var(--accent-ink); text-align: center; font-size: 12px; font-weight: 800; padding: 7px 12px; }
 .site-header { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 91%, transparent); backdrop-filter: blur(14px); }
 .header-inner { min-height: 64px; display: flex; align-items: center; gap: 16px; }
@@ -554,6 +577,19 @@ html.app-booting .site-footer { visibility: hidden; }
 .product-image { position: relative; aspect-ratio: 1 / 1; background: var(--surface-2); overflow: hidden; }
 .product-image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: .4s ease; }
 .product-card:hover .product-image img { transform: scale(1.05); }
+.brand-card.reveal-item,
+.promo-card.reveal-item,
+.category-tile.reveal-item,
+.product-card.reveal-item {
+  transition:
+    opacity .55s ease,
+    transform .55s cubic-bezier(.22, 1, .36, 1),
+    border-color .2s ease,
+    color .2s ease,
+    background-color .2s ease;
+}
+.category-tile.reveal-item:hover { transform: translateY(-2px); }
+.product-card.reveal-item:hover { transform: translateY(-3px); }
 .sale-badge { position: absolute; top: 12px; inset-inline-start: 12px; border-radius: 6px; background: var(--accent); color: var(--accent-ink); padding: 4px 8px; font-size: 12px; font-weight: 900; }
 .product-body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 14px; }
 .product-brand { color: var(--ink-3); font-size: 12px; }
