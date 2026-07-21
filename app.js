@@ -773,6 +773,18 @@ function syncPhoneDialCode(country, previousCountry = "") {
   if (!current.startsWith("+")) {
     phoneInput.value = `${nextCode} ${current}`;
   }
+  limitPhoneForCountry(country);
+}
+
+function limitPhoneForCountry(country) {
+  const phoneInput = document.querySelector("#customerPhone");
+  if (!phoneInput) return;
+  const dialCode = countryDialCodes[country] || "+965";
+  const expectedLength = countryPhoneLengths[country] || 8;
+  const digits = phoneInput.value.replace(/\D/g, "");
+  const dialDigits = dialCode.replace(/\D/g, "");
+  const localDigits = (digits.startsWith(dialDigits) ? digits.slice(dialDigits.length) : digits).slice(0, expectedLength);
+  phoneInput.value = `${dialCode} ${localDigits}`.trimEnd() + (localDigits.length ? "" : " ");
 }
 
 function validatePhoneForCountry(phone, country) {
@@ -873,8 +885,15 @@ function renderCheckout() {
     </section>
   `;
   const shippingCountry = document.querySelector("#shippingCountry");
+  const customerPhone = document.querySelector("#customerPhone");
   shippingCountry.dataset.previousCountry = shippingCountry.value;
   syncPhoneDialCode(shippingCountry.value);
+  customerPhone.addEventListener("input", () => {
+    limitPhoneForCountry(shippingCountry.value);
+  });
+  customerPhone.addEventListener("focus", () => {
+    syncPhoneDialCode(shippingCountry.value);
+  });
   shippingCountry.addEventListener("change", (event) => {
     const previousCountry = event.currentTarget.dataset.previousCountry || "";
     document.querySelector("#shippingCity").innerHTML = cityOptions(event.target.value);
