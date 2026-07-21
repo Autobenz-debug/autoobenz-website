@@ -619,7 +619,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   font-size: 13px;
   font-weight: 900;
 }
-.checkout-form input, .checkout-form textarea {
+.checkout-form input, .checkout-form select, .checkout-form textarea {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -628,9 +628,9 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   color: var(--ink);
   padding: 0 12px;
 }
-.checkout-form input { height: 46px; }
+.checkout-form input, .checkout-form select { height: 46px; }
 .checkout-form textarea { padding-block: 12px; resize: vertical; }
-.checkout-form input:focus, .checkout-form textarea:focus { border-color: var(--accent); }
+.checkout-form input:focus, .checkout-form select:focus, .checkout-form textarea:focus { border-color: var(--accent); }
 .span-2 { grid-column: span 2; }
 .checkout-message { min-height: 22px; margin: 0; color: var(--ink-3); font-size: 13px; }
 .checkout-message.error { color: var(--danger); }

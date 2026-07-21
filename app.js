@@ -659,6 +659,83 @@ const cartLines = () => state.cart.map((item) => {
 
 const cartSubtotal = () => cartLines().reduce((sum, item) => sum + item.lineTotal, 0);
 
+const shippingLocations = {
+  "الكويت": [
+    "مدينة الكويت",
+    "العاصمة",
+    "حولي",
+    "السالمية",
+    "الجهراء",
+    "العيون",
+    "النسيم",
+    "الأحمدي",
+    "الفروانية",
+    "مبارك الكبير",
+    "صباح السالم",
+    "الفحيحيل",
+    "المنقف",
+    "الرميثية",
+    "العارضية",
+    "خيطان",
+  ],
+  "السعودية": [
+    "الرياض",
+    "النظيم",
+    "جدة",
+    "مكة",
+    "المدينة المنورة",
+    "الدمام",
+    "الخبر",
+    "الظهران",
+    "الأحساء",
+    "بريدة",
+    "الطائف",
+    "تبوك",
+  ],
+  "الإمارات": [
+    "دبي",
+    "أبوظبي",
+    "الشارقة",
+    "عجمان",
+    "رأس الخيمة",
+    "الفجيرة",
+    "أم القيوين",
+    "العين",
+  ],
+  "قطر": [
+    "الدوحة",
+    "الريان",
+    "الوكرة",
+    "لوسيل",
+    "الخور",
+    "أم صلال",
+  ],
+  "البحرين": [
+    "المنامة",
+    "المحرق",
+    "الرفاع",
+    "مدينة عيسى",
+    "سترة",
+    "حمد تاون",
+  ],
+  "عمان": [
+    "مسقط",
+    "صلالة",
+    "صحار",
+    "نزوى",
+    "السيب",
+    "بركاء",
+  ],
+};
+
+const countryOptions = () => Object.keys(shippingLocations)
+  .map((country) => `<option value="${country}">${country}</option>`)
+  .join("");
+
+const cityOptions = (country) => (shippingLocations[country] || [])
+  .map((city) => `<option value="${city}">${city}</option>`)
+  .join("");
+
 function renderCheckout() {
   const lines = cartLines();
   if (!lines.length) {
@@ -690,8 +767,8 @@ function renderCheckout() {
             <label>الاسم الكامل<input name="customer_name" required autocomplete="name"></label>
             <label>رقم الهاتف<input name="customer_phone" required inputmode="tel" dir="ltr" placeholder="+965 0000 0000"></label>
             <label>البريد الإلكتروني<input name="customer_email" type="email" autocomplete="email"></label>
-            <label>الدولة<input name="shipping_country" value="Kuwait" required></label>
-            <label>المدينة / المنطقة<input name="shipping_city" required></label>
+            <label>الدولة<select name="shipping_country" id="shippingCountry" required>${countryOptions()}</select></label>
+            <label>المدينة / المنطقة<select name="shipping_city" id="shippingCity" required>${cityOptions("الكويت")}</select></label>
             <label class="span-2">العنوان التفصيلي<textarea name="shipping_address" rows="4" required></textarea></label>
             <label class="span-2">ملاحظات إضافية<textarea name="notes" rows="3" placeholder="موديل السيارة، وقت التواصل المناسب، أو أي ملاحظات"></textarea></label>
             <button class="primary-button span-2" type="submit">تأكيد الطلب</button>
@@ -718,6 +795,9 @@ function renderCheckout() {
       </div>
     </section>
   `;
+  document.querySelector("#shippingCountry").addEventListener("change", (event) => {
+    document.querySelector("#shippingCity").innerHTML = cityOptions(event.target.value);
+  });
   document.querySelector("#checkoutForm").addEventListener("submit", submitCheckout);
 }
 
