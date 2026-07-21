@@ -646,12 +646,12 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  min-height: 64px;
+  gap: 14px;
+  min-height: 72px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface-2);
-  padding: 12px 14px;
+  padding: 14px 16px;
   cursor: pointer;
   transition: border-color .2s ease, background .2s ease;
 }
@@ -667,15 +667,19 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 }
 .payment-option span {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 .payment-option b {
   color: var(--ink);
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 .payment-option small {
   color: var(--ink-3);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
 }
 .checkout-message { min-height: 22px; margin: 0; color: var(--ink-3); font-size: 13px; }
 .checkout-message.error { color: var(--danger); }

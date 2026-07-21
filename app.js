@@ -784,7 +784,7 @@ function renderCheckout() {
                 <input type="radio" name="payment_method" value="deema">
                 <span>
                   <b>Deema Payment</b>
-                  <small>قساط ميسرة، بدون فوائد</small>
+                  <small>أقساط ميسرة، بدون فوائد</small>
                 </span>
               </label>
               <label class="payment-option">
