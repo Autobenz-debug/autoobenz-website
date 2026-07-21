@@ -268,6 +268,40 @@ function renderOptions() {
   )).join("")}`;
 }
 
+const categoryOldId = (category) => Number(category.old_id || category.id || 0);
+
+const categoryParentId = (category) => Number(category.parent_old_id || category.parent_id || category.parent || 0);
+
+function modelOptionsForBrand(brandId) {
+  const brand = adminState.brands.find((item) => String(item.id) === String(brandId));
+  if (!brand) return [];
+  const root = adminState.categories.find((category) => category.slug === brand.slug && categoryParentId(category) === 0);
+  const rootId = root ? categoryOldId(root) : null;
+  const seen = new Set();
+  return adminState.categories
+    .filter((category) => rootId && categoryParentId(category) === rootId)
+    .filter((category) => {
+      if (seen.has(category.slug)) return false;
+      seen.add(category.slug);
+      return true;
+    })
+    .sort((a, b) => String(a.name_ar || a.name_en || a.slug).localeCompare(String(b.name_ar || b.name_en || b.slug)));
+}
+
+function renderModelOptions(selectedId = $("#productCategory")?.value || "") {
+  const brandId = $("#productBrand")?.value || "";
+  const options = modelOptionsForBrand(brandId);
+  const selectedCategory = adminState.categories.find((category) => String(category.id) === String(selectedId));
+  const entries = selectedCategory && !options.some((category) => String(category.id) === String(selectedId))
+    ? [selectedCategory, ...options]
+    : options;
+  $("#productCategory").disabled = !brandId;
+  $("#productCategory").innerHTML = [
+    `<option value="">${brandId ? "بدون موديل" : "اختر الماركة أولاً"}</option>`,
+    ...entries.map((category) => `<option value="${category.id}" ${String(category.id) === String(selectedId) ? "selected" : ""}>${escapeHtml(category.name_ar || category.name_en || category.slug)}</option>`),
+  ].join("");
+}
+
 function renderEverything() {
   renderStats();
   renderOptions();
@@ -332,6 +366,7 @@ function openProductModal(product = null) {
   $("#productBrand").value = product?.brand_id || "";
   $("#productType").value = product?.type_id || "";
   $("#productCategory").value = product?.category_id || "";
+  renderModelOptions(product?.category_id || "");
   $("#productCatSlugs").value = (product?.cat_slugs || []).join(", ");
   $("#productDescription").value = product?.description_ar || product?.description_en || "";
   $("#productActive").checked = product?.is_active ?? true;
@@ -358,10 +393,18 @@ function productPayload() {
   const brandId = $("#productBrand").value || null;
   const typeId = $("#productType").value || null;
   const categoryId = $("#productCategory").value || null;
-  const catSlugs = $("#productCatSlugs").value
+  const selectedBrand = adminState.brands.find((brand) => String(brand.id) === String(brandId));
+  const selectedType = adminState.types.find((type) => String(type.id) === String(typeId));
+  const selectedCategory = adminState.categories.find((category) => String(category.id) === String(categoryId));
+  const catSlugs = [...new Set([
+    selectedBrand?.slug,
+    selectedType?.slug,
+    selectedCategory?.slug,
+    ...$("#productCatSlugs").value
     .split(",")
     .map((item) => item.trim())
-    .filter(Boolean);
+    .filter(Boolean),
+  ].filter(Boolean))];
   return {
     title_ar: title,
     title_en: title,
@@ -374,7 +417,7 @@ function productPayload() {
     brand_id: brandId,
     type_id: typeId,
     category_id: categoryId,
-    model: adminState.categories.find((category) => String(category.id) === String(categoryId))?.slug || null,
+    model: selectedCategory?.slug || null,
     cat_slugs: catSlugs,
     is_active: $("#productActive").checked,
     is_featured: $("#productFeatured").checked,
@@ -506,6 +549,9 @@ function bindEvents() {
   });
   $("#productTitle").addEventListener("input", () => {
     if (!$("#productId").value) $("#productSlug").value = slugify($("#productTitle").value);
+  });
+  $("#productBrand").addEventListener("change", () => {
+    renderModelOptions("");
   });
   $("#productForm").addEventListener("submit", saveProduct);
   $("#hideProductButton").addEventListener("click", hideProduct);

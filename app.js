@@ -113,7 +113,7 @@ const brandModels = (brandSlug) => {
   const root = state.categories.find((category) => category.slug === brandSlug && Number(category.parent) === 0);
   if (!root) return [];
   return state.categories
-    .filter((category) => category.parent === root.id && category.count > 0)
+    .filter((category) => category.parent === root.id)
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
@@ -495,7 +495,7 @@ function renderHome() {
       <div class="container">
         <div class="benefits-grid">
           <div><p>توصيل لكل الكويت</p><span>وشحن عالمي لجميع الدول</span></div>
-          <div><p>قسّطها على 4 دفعات</p><span>بدون فوائد مع تابي</span></div>
+          <div><p>قسّطها على 4 دفعات</p><span>بدون فوائد مع ديمه أو تالي</span></div>
           <div><p>دفع آمن 100%</p><span>KNET وApple Pay والبطاقات</span></div>
           <div><p>دعم واتساب فوري</p><span>نرد عليك بنفس اليوم</span></div>
         </div>
@@ -613,7 +613,7 @@ function renderProduct(slug) {
               <span class="price">${money(product.price)}</span>
               ${discount ? `<span class="old-price">${money(product.regular_price)}</span><span class="sale-badge">خصم ${discount}%</span>` : ""}
             </div>
-            <p class="installment">أو قسّطها على 4 دفعات × <b>${money(product.price / 4)}</b> بدون فوائد مع تابي</p>
+            <p class="installment">أو قسّطها على 4 دفعات × <b>${money(product.price / 4)}</b> بدون فوائد مع ديمه أو تالي</p>
             <p class="description">${escapeHtml(product.description || "تواصل معنا لمعرفة التفاصيل والتوافق.")}</p>
             <div class="chips"><span>التوافق:</span>${productCategories(product).map((cat) => `<span class="chip">${escapeHtml(cat)}</span>`).join("")}</div>
             <div class="product-actions">
