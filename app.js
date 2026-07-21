@@ -11,6 +11,14 @@ const cartCount = document.querySelector("#cartCount");
 const cartDrawer = document.querySelector("#cartDrawer");
 const mobileNav = document.querySelector("#mobileNav");
 
+if ("scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+
+function resetPageScroll() {
+  window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+}
+
 const money = (value) => {
   const options = value >= 100 ? { maximumFractionDigits: 0 } : { maximumFractionDigits: 1 };
   return `${Number(value || 0).toLocaleString("en-US", options)} د.ك`;
@@ -1047,10 +1055,11 @@ function render() {
   else if (location.pathname.startsWith("/product/")) renderProduct(decodeURIComponent(location.pathname.split("/product/")[1]));
   else renderNotFound();
   renderCart();
-  scrollTo({ top: 0, behavior: "instant" });
+  resetPageScroll();
 }
 
 async function boot() {
+  resetPageScroll();
   const data = await supabaseData().catch((error) => {
     console.warn("Supabase data is not ready yet, using local data.", error);
     return null;
@@ -1061,6 +1070,8 @@ async function boot() {
   state.types = data.types;
   renderFooterLinks();
   render();
+  requestAnimationFrame(resetPageScroll);
+  setTimeout(resetPageScroll, 120);
 }
 
 boot().catch((error) => {
