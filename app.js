@@ -804,10 +804,12 @@ function renderCheckout() {
 async function submitCheckout(event) {
   event.preventDefault();
   const message = document.querySelector("#checkoutMessage");
+  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
   const lines = cartLines();
   if (!lines.length) return;
   message.className = "checkout-message";
   message.textContent = "جاري حفظ الطلب...";
+  if (submitButton) submitButton.disabled = true;
   const formData = new FormData(event.currentTarget);
   const subtotal = cartSubtotal();
   const orderNumber = `AB-${Date.now().toString().slice(-8)}`;
@@ -829,7 +831,7 @@ async function submitCheckout(event) {
         total_kwd: subtotal,
         status: "new",
         payment_status: "pending",
-        payment_method: "cash_or_link",
+        payment_method: "sadadpay",
       }),
     });
     const order = orderRows?.[0];
@@ -848,10 +850,33 @@ async function submitCheckout(event) {
         total_kwd: lineTotal,
       }))),
     });
+    message.textContent = "جاري تحويلك إلى صفحة الدفع...";
+    const sadadResponse = await fetch("/api/sadad-create-payment", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        orderId: order.id,
+        orderNumber,
+        amount: subtotal,
+        customerName: formData.get("customer_name"),
+        customerPhone: formData.get("customer_phone"),
+        customerEmail: formData.get("customer_email"),
+        items: lines.map(({ product, qty, lineTotal }) => ({
+          name: product.name,
+          quantity: qty,
+          amount: lineTotal,
+        })),
+      }),
+    });
+    const sadadData = await sadadResponse.json();
+    if (!sadadResponse.ok || !sadadData?.paymentUrl) {
+      throw new Error(sadadData?.error || "تعذر إنشاء رابط الدفع.");
+    }
     state.cart = [];
     saveCart();
-    navigate(`/order-success?order=${encodeURIComponent(orderNumber)}`);
+    window.location.href = sadadData.paymentUrl;
   } catch (error) {
+    if (submitButton) submitButton.disabled = false;
     message.classList.add("error");
     message.textContent = `تعذر حفظ الطلب: ${error.message}`;
   }

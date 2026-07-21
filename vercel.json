@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/((?!assets/|styles.css|app.js|admin.html|admin.css|admin.js|supabase-config.js|server.js|package.json|README.md).*)",
+      "source": "/((?!api/|assets/|styles.css|app.js|admin.html|admin.css|admin.js|supabase-config.js|server.js|package.json|README.md).*)",
       "destination": "/index.html"
     }
   ]
