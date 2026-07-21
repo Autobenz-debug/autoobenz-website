@@ -745,10 +745,21 @@ const countryDialCodes = {
   "عمان": "+968",
 };
 
+const countryPhoneLengths = {
+  "الكويت": 8,
+  "السعودية": 9,
+  "الإمارات": 9,
+  "قطر": 8,
+  "البحرين": 8,
+  "عمان": 8,
+};
+
 function syncPhoneDialCode(country, previousCountry = "") {
   const phoneInput = document.querySelector("#customerPhone");
   if (!phoneInput) return;
   const nextCode = countryDialCodes[country] || "+965";
+  const expectedLength = countryPhoneLengths[country] || 8;
+  phoneInput.placeholder = `${nextCode} ${"0".repeat(expectedLength)}`;
   const previousCode = countryDialCodes[previousCountry] || "";
   const current = phoneInput.value.trim();
   if (!current || current === previousCode) {
@@ -762,6 +773,21 @@ function syncPhoneDialCode(country, previousCountry = "") {
   if (!current.startsWith("+")) {
     phoneInput.value = `${nextCode} ${current}`;
   }
+}
+
+function validatePhoneForCountry(phone, country) {
+  const dialCode = countryDialCodes[country] || "+965";
+  const expectedLength = countryPhoneLengths[country] || 8;
+  const digits = String(phone || "").replace(/\D/g, "");
+  const dialDigits = dialCode.replace(/\D/g, "");
+  const localDigits = digits.startsWith(dialDigits) ? digits.slice(dialDigits.length) : digits;
+  if (localDigits.length !== expectedLength) {
+    return `رقم الهاتف يجب أن يكون ${expectedLength} أرقام بعد مفتاح الدولة ${dialCode}.`;
+  }
+  if (/^(\d)\1+$/.test(localDigits)) {
+    return "رقم الهاتف غير صحيح، لا يمكن استخدام رقم مكرر بالكامل.";
+  }
+  return "";
 }
 
 function renderCheckout() {
@@ -793,11 +819,11 @@ function renderCheckout() {
         <div class="checkout-grid">
           <form class="checkout-form" id="checkoutForm">
             <label>الاسم الكامل<input name="customer_name" required autocomplete="name"></label>
-            <label>رقم الهاتف<input name="customer_phone" id="customerPhone" required inputmode="tel" dir="ltr" value="+965 " placeholder="+965 0000 0000"></label>
-            <label>البريد الإلكتروني<input name="customer_email" type="email" autocomplete="email"></label>
             <label>الدولة<select name="shipping_country" id="shippingCountry" required>${countryOptions()}</select></label>
             <label>المدينة / المنطقة<select name="shipping_city" id="shippingCity" required>${cityOptions("الكويت")}</select></label>
             <label class="span-2">العنوان التفصيلي<textarea name="shipping_address" rows="4" required></textarea></label>
+            <label>رقم الهاتف<input name="customer_phone" id="customerPhone" required inputmode="tel" dir="ltr" value="+965 " placeholder="+965 0000 0000"></label>
+            <label>البريد الإلكتروني<input name="customer_email" type="email" autocomplete="email"></label>
             <label class="span-2">ملاحظات إضافية<textarea name="notes" rows="3" placeholder="موديل السيارة، وقت التواصل المناسب، أو أي ملاحظات"></textarea></label>
             <div class="payment-options span-2" role="radiogroup" aria-label="طريقة الدفع">
               <p>طريقة الدفع</p>
@@ -868,6 +894,14 @@ async function submitCheckout(event) {
   message.textContent = "جاري حفظ الطلب...";
   if (submitButton) submitButton.disabled = true;
   const formData = new FormData(event.currentTarget);
+  const phoneError = validatePhoneForCountry(formData.get("customer_phone"), formData.get("shipping_country"));
+  if (phoneError) {
+    if (submitButton) submitButton.disabled = false;
+    message.classList.add("error");
+    message.textContent = phoneError;
+    document.querySelector("#customerPhone")?.focus();
+    return;
+  }
   const paymentMethod = formData.get("payment_method") || "sadadpay";
   const subtotal = cartSubtotal();
   const orderNumber = `AB-${Date.now().toString().slice(-8)}`;
