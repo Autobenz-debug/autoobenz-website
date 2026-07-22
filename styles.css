@@ -655,6 +655,93 @@ html.app-booting .site-footer { visibility: hidden; }
 .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 18px; }
 .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); border-radius: 7px; padding: 6px 10px; font-size: 12px; }
 .product-actions { display: flex; gap: 10px; margin-top: 26px; }
+.product-buy-box {
+  display: grid;
+  gap: 12px;
+  margin-top: 26px;
+}
+.product-buy-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.product-qty-control {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.product-qty-control button {
+  width: 44px;
+  height: 48px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 18px;
+  transition: color .2s ease, background-color .2s ease;
+}
+.product-qty-control button:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.product-qty-control span {
+  width: 34px;
+  text-align: center;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+.product-buy-now,
+.product-add-cart,
+.product-whatsapp-order {
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: filter .2s ease, background-color .2s ease, transform .12s ease;
+}
+.product-buy-now {
+  flex: 1;
+  border: 0;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 800;
+}
+.product-buy-now:hover { filter: brightness(1.1); }
+.product-buy-secondary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.product-add-cart {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 700;
+}
+.product-add-cart:hover { background: var(--surface-2); }
+.product-whatsapp-order {
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+  color: #4ade80;
+  font-weight: 700;
+}
+.product-whatsapp-order:hover { background: color-mix(in srgb, var(--green) 25%, transparent); }
+.product-whatsapp-order svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  stroke: none;
+}
+.product-buy-now:active,
+.product-add-cart:active,
+.product-whatsapp-order:active {
+  transform: scale(.98);
+}
 .trust-list { margin: 24px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); color: var(--ink-2); line-height: 2.2; list-style: none; }
 .vin-panel { max-width: 850px; margin: 40px auto 80px; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 24px; }
 .vin-panel label { display: block; font-weight: 900; margin-bottom: 12px; }

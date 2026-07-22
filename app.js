@@ -608,6 +608,8 @@ function renderProduct(slug) {
     .filter((item) => item.id !== product.id && brand && inBrand(item, brand.slug))
     .slice(0, 4);
   const discount = product.regular_price > product.price ? Math.round((1 - product.price / product.regular_price) * 100) : 0;
+  const productUrl = `${location.origin}/product/${product.slug}`;
+  const whatsappText = encodeURIComponent(`مرحبا، أبي أطلب: ${product.name}\n${productUrl}`);
   app.innerHTML = `
     <section class="product-page">
       <div class="container">
@@ -629,9 +631,22 @@ function renderProduct(slug) {
             <p class="installment">أو قسّطها على 4 دفعات × <b>${money(product.price / 4)}</b> بدون فوائد مع ديمه أو تالي</p>
             <p class="description">${escapeHtml(product.description || "تواصل معنا لمعرفة التفاصيل والتوافق.")}</p>
             <div class="chips"><span>التوافق:</span>${productCategories(product).map((cat) => `<span class="chip">${escapeHtml(cat)}</span>`).join("")}</div>
-            <div class="product-actions">
-              <button class="primary-button" type="button" onclick="addToCart(${product.id})">إضافة للسلة</button>
-              <a class="secondary-button" href="https://wa.me/96550304591?text=${encodeURIComponent(`مرحبا، عندي استفسار عن ${product.name}`)}" target="_blank" rel="noreferrer">استفسار واتساب</a>
+            <div class="product-buy-box" data-product-buy="${product.id}">
+              <div class="product-buy-main">
+                <div class="product-qty-control" aria-label="الكمية">
+                  <button type="button" data-product-qty-step="-1" aria-label="تقليل الكمية">−</button>
+                  <span data-product-qty-value>1</span>
+                  <button type="button" data-product-qty-step="1" aria-label="زيادة الكمية">+</button>
+                </div>
+                <button class="product-buy-now" type="button" data-buy-now>اشترِ الآن</button>
+              </div>
+              <div class="product-buy-secondary">
+                <button class="product-add-cart" type="button" data-add-product-cart>أضف للسلة</button>
+                <a class="product-whatsapp-order" href="https://wa.me/96550304591?text=${whatsappText}" target="_blank" rel="noreferrer">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.7-1.3 1.3-1.8 1.3-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4l.9 2.1c.1.2.1.4 0 .6l-.4.6-.5.5c-.2.2-.3.4-.1.7.2.3.8 1.4 1.8 2.2 1.2 1.1 2.3 1.4 2.6 1.6.3.1.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .8-.2 1.5Z"></path></svg>
+                  اطلب واتساب
+                </a>
+              </div>
             </div>
             <ul class="trust-list">
               <li>✓ توصيل لكل مناطق الكويت — وشحن عالمي</li>
@@ -651,6 +666,26 @@ function renderProduct(slug) {
       button.classList.add("active");
     });
   });
+  const buyBox = document.querySelector("[data-product-buy]");
+  if (buyBox) {
+    const qtyValue = buyBox.querySelector("[data-product-qty-value]");
+    const currentQty = () => Math.max(1, Number(qtyValue.textContent) || 1);
+    const setProductQty = (qty) => {
+      qtyValue.textContent = String(Math.max(1, qty));
+    };
+    buyBox.querySelectorAll("[data-product-qty-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setProductQty(currentQty() + Number(button.dataset.productQtyStep));
+      });
+    });
+    buyBox.querySelector("[data-add-product-cart]").addEventListener("click", () => {
+      addToCart(product.id, currentQty());
+    });
+    buyBox.querySelector("[data-buy-now]").addEventListener("click", () => {
+      addToCart(product.id, currentQty());
+      navigate("/checkout");
+    });
+  }
 }
 
 function renderVin() {
