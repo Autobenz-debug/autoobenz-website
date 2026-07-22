@@ -410,7 +410,7 @@ function hero() {
             <select name="model" aria-label="الموديل">
               <option value="">كل الموديلات</option>
             </select>
-            <button type="submit">عرض القطع</button>
+            <button type="submit" class="h-12 rounded-lg bg-accent px-8 text-sm font-bold text-accent-ink transition hover:brightness-110 disabled:opacity-40" disabled>عرض القطع</button>
           </div>
         </form>
       </div>
@@ -517,12 +517,19 @@ function renderHome() {
   const finder = document.querySelector("#homeFinder");
   const brandSelect = finder.querySelector('select[name="brand"]');
   const modelSelect = finder.querySelector('select[name="model"]');
+  const submitButton = finder.querySelector('button[type="submit"]');
+  const updateFinderButton = () => {
+    submitButton.disabled = !brandSelect.value;
+  };
   brandSelect.addEventListener("change", () => {
     const models = brandModels(brandSelect.value);
     modelSelect.innerHTML = `<option value="">كل الموديلات</option>${models.map((model) => `<option value="${model.slug}">${escapeHtml(model.name)}</option>`).join("")}`;
+    updateFinderButton();
   });
+  modelSelect.addEventListener("change", updateFinderButton);
   finder.addEventListener("submit", (event) => {
     event.preventDefault();
+    if (submitButton.disabled) return;
     const data = new FormData(event.currentTarget);
     const params = new URLSearchParams();
     if (data.get("brand")) params.set("brand", data.get("brand"));
