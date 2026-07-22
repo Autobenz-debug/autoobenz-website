@@ -68,7 +68,6 @@ html.app-booting .site-footer { visibility: hidden; }
     transition: none;
   }
 }
-.topbar { background: var(--accent); color: var(--accent-ink); text-align: center; font-size: 12px; font-weight: 800; padding: 7px 12px; }
 .site-header { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 91%, transparent); backdrop-filter: blur(14px); }
 .header-inner { min-height: 64px; display: flex; align-items: center; gap: 16px; }
 .brand-link { flex: 0 0 auto; display: flex; align-items: center; }
