@@ -513,7 +513,7 @@ function renderHome() {
       </div>
     </section>
     <section class="instagram-section">
-      <div class="container">
+      <div class="container reveal in">
         <h2>+34 ألف متابع على انستغرام</h2>
         <p>شوف أحدث القطع وتركيبات عملائنا أول بأول</p>
         <a href="https://www.instagram.com/autoobenz/" target="_blank" rel="noopener noreferrer">@autoobenz — حساب موثّق ✓</a>
