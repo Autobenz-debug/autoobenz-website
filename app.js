@@ -407,8 +407,8 @@ function hero() {
               <option value="">الماركة</option>
               ${state.brands.map((brand) => `<option value="${brand.slug}">${brand.ar} — ${brand.en}</option>`).join("")}
             </select>
-            <select name="model" aria-label="الموديل">
-              <option value="">كل الموديلات</option>
+            <select name="model" class="h-12 w-full rounded-lg border border-line bg-surface-2 px-3 text-sm text-ink outline-none transition focus:border-accent" aria-label="الموديل" disabled>
+              <option value="" selected>الموديل</option>
             </select>
             <button type="submit" class="h-12 rounded-lg bg-accent px-8 text-sm font-bold text-accent-ink transition hover:brightness-110 disabled:opacity-40" disabled>عرض القطع</button>
           </div>
@@ -523,7 +523,8 @@ function renderHome() {
   };
   brandSelect.addEventListener("change", () => {
     const models = brandModels(brandSelect.value);
-    modelSelect.innerHTML = `<option value="">كل الموديلات</option>${models.map((model) => `<option value="${model.slug}">${escapeHtml(model.name)}</option>`).join("")}`;
+    modelSelect.disabled = !brandSelect.value;
+    modelSelect.innerHTML = `<option value="" selected>الموديل</option>${models.map((model) => `<option value="${model.slug}">${escapeHtml(model.name)}</option>`).join("")}`;
     updateFinderButton();
   });
   modelSelect.addEventListener("change", updateFinderButton);
