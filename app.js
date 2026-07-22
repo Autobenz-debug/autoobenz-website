@@ -465,7 +465,7 @@ function renderHome() {
             <div>
               <p>بودي كت كاربون</p>
               <h3>غيّر شخصية سيارتك كاملة</h3>
-              <b>تصفح البودي كت ←</b>
+              <span class="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-bold text-accent-ink transition group-hover:brightness-110">تصفح البودي كت ←</span>
             </div>
           </a>
           <a class="promo-card" href="/shop?type=steering-wheel" data-link>
@@ -474,7 +474,7 @@ function renderHome() {
             <div>
               <p>ستيرنق مخصص</p>
               <h3>لمستك الخاصة بين يدينك</h3>
-              <b>تصفح الستيرنق ←</b>
+              <span class="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-bold text-accent-ink transition group-hover:brightness-110">تصفح الستيرنق ←</span>
             </div>
           </a>
         </div>

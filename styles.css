@@ -21,6 +21,10 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: "Cairo", "Segoe UI", Tahoma, Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   letter-spacing: 0;
 }
 a { color: inherit; text-decoration: none; }
@@ -41,13 +45,16 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .gap-2 { gap: 8px; }
 .rounded-lg { border-radius: 8px; }
 .bg-accent { background: var(--accent); }
+.px-5 { padding-inline: 20px; }
 .px-8 { padding-inline: 32px; }
+.py-2\.5 { padding-top: 10px; padding-bottom: 10px; }
 .py-3\.5 { padding-top: 14px; padding-bottom: 14px; }
 .text-sm { font-size: 14px; line-height: 1.5; }
 .font-bold { font-weight: 800; }
 .text-accent-ink { color: var(--accent-ink); }
 .transition { transition: filter .2s ease, color .2s ease, border-color .2s ease, background .2s ease; }
 .hover\:brightness-110:hover { filter: brightness(1.1); }
+.promo-card:hover .group-hover\:brightness-110 { filter: brightness(1.1); }
 @media (min-width: 768px) {
   .md\:py-20 { padding-top: 80px; padding-bottom: 80px; }
   .md\:text-4xl { font-size: 36px; line-height: 1.25; }
@@ -171,7 +178,7 @@ html.app-booting .site-footer { visibility: hidden; }
   margin: 0 0 16px;
   color: var(--accent);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: .35em;
 }
 .hero h1 {
@@ -179,8 +186,8 @@ html.app-booting .site-footer { visibility: hidden; }
   margin: 0;
   color: var(--ink);
   font-size: clamp(36px, 5vw, 60px);
-  line-height: 1.25;
-  font-weight: 1000;
+  line-height: 1.2;
+  font-weight: 900;
 }
 .hero h1 span { color: var(--accent); }
 .hero-lead {
@@ -551,6 +558,9 @@ html.app-booting .site-footer { visibility: hidden; }
   transition: filter .2s ease;
 }
 .promo-card:hover b { filter: brightness(1.1); }
+.promo-card .mt-4 {
+  width: fit-content;
+}
 .pill-card { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 16px; color: var(--ink-2); transition: .2s ease; }
 .pill-card:hover { border-color: var(--line-strong); color: var(--ink); transform: translateY(-2px); }
 .pill-card b { display: block; color: var(--ink); margin-bottom: 4px; }
