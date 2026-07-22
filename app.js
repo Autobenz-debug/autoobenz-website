@@ -512,13 +512,7 @@ function renderHome() {
         </div>
       </div>
     </section>
-    <section class="instagram-section">
-      <div class="container reveal in">
-        <h2>+34 ألف متابع على انستغرام</h2>
-        <p>شوف أحدث القطع وتركيبات عملائنا أول بأول</p>
-        <a href="https://www.instagram.com/autoobenz/" target="_blank" rel="noopener noreferrer">@autoobenz — حساب موثّق ✓</a>
-      </div>
-    </section>
+    <section class="container-x py-16 text-center md:py-20 instagram-section"><div class="reveal in"><h2 class="text-2xl font-black md:text-4xl">+34 ألف متابع على انستغرام</h2><p class="mt-3 text-ink-2">شوف أحدث القطع وتركيبات عملائنا أول بأول</p><a href="https://www.instagram.com/autoobenz/" target="_blank" rel="noopener noreferrer" class="mt-6 inline-flex items-center gap-2 rounded-lg bg-accent px-8 py-3.5 text-sm font-bold text-accent-ink transition hover:brightness-110">@autoobenz — حساب موثّق ✓</a></div></section>
   `;
   const finder = document.querySelector("#homeFinder");
   const brandSelect = finder.querySelector('select[name="brand"]');

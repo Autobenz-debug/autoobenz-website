@@ -28,6 +28,30 @@ button, input, select { font: inherit; }
 button { cursor: pointer; }
 svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .container { width: min(1180px, calc(100% - 32px)); margin-inline: auto; }
+.container-x { width: min(1180px, calc(100% - 32px)); margin-inline: auto; }
+.py-16 { padding-top: 64px; padding-bottom: 64px; }
+.text-center { text-align: center; }
+.text-2xl { font-size: 24px; line-height: 1.35; }
+.font-black { font-weight: 1000; }
+.mt-3 { margin-top: 12px; }
+.mt-6 { margin-top: 24px; }
+.text-ink-2 { color: var(--ink-2); }
+.inline-flex { display: inline-flex; }
+.items-center { align-items: center; }
+.gap-2 { gap: 8px; }
+.rounded-lg { border-radius: 8px; }
+.bg-accent { background: var(--accent); }
+.px-8 { padding-inline: 32px; }
+.py-3\.5 { padding-top: 14px; padding-bottom: 14px; }
+.text-sm { font-size: 14px; line-height: 1.5; }
+.font-bold { font-weight: 800; }
+.text-accent-ink { color: var(--accent-ink); }
+.transition { transition: filter .2s ease, color .2s ease, border-color .2s ease, background .2s ease; }
+.hover\:brightness-110:hover { filter: brightness(1.1); }
+@media (min-width: 768px) {
+  .md\:py-20 { padding-top: 80px; padding-bottom: 80px; }
+  .md\:text-4xl { font-size: 36px; line-height: 1.25; }
+}
 #app { min-height: calc(100svh - 128px); }
 .app-loading {
   min-height: calc(100svh - 128px);
@@ -312,41 +336,9 @@ html.app-booting .site-footer { visibility: hidden; }
   color: var(--ink-3);
   font-size: 14px;
 }
-.instagram-section {
-  padding: 64px 0;
-  text-align: center;
-}
-.instagram-section h2 {
-  margin: 0;
-  color: var(--ink);
-  font-size: clamp(24px, 3vw, 36px);
-  font-weight: 1000;
-  line-height: 1.25;
-}
-.instagram-section p {
-  margin: 12px 0 0;
-  color: var(--ink-2);
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.7;
-}
-.instagram-section a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 24px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  padding: 14px 32px;
-  font-size: 14px;
-  font-weight: 800;
-  transition: filter .2s ease;
-}
-.instagram-section a:hover {
-  filter: brightness(1.1);
-}
+.instagram-section h2 { margin: 0; color: var(--ink); }
+.instagram-section p { margin-bottom: 0; font-weight: 600; line-height: 1.7; }
+.instagram-section a { justify-content: center; }
 .brand-strip {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
