@@ -58,6 +58,17 @@ const brandLogo = (slug) => {
   return `/assets/images/${map[slug] || "autoobenz-logo.png"}`;
 };
 
+const brandMarqueeLogo = (slug) => {
+  const map = {
+    audi: "brand-audi-marquee.svg",
+    ferrari: "brand-ferrari-marquee.svg",
+    lamborghini: "brand-lamborghini-marquee.svg",
+    mclaren: "brand-mclaren-marquee.svg",
+    "rolls-royce": "brand-rollsroyce-marquee.svg",
+  };
+  return map[slug] ? `/assets/images/${map[slug]}` : brandLogo(slug);
+};
+
 const escapeHtml = (value = "") => String(value)
   .replaceAll("&", "&amp;")
   .replaceAll("<", "&lt;")
@@ -414,7 +425,7 @@ function brandMarquee() {
       <div class="marquee-track">
         ${items.map((brand) => `
           <span>
-            <img alt="" aria-hidden="true" loading="lazy" src="${brandLogo(brand.slug)}">
+            <img alt="" aria-hidden="true" loading="lazy" src="${brandMarqueeLogo(brand.slug)}">
             <b>${escapeHtml(brand.en.toUpperCase())}</b>
           </span>
         `).join("")}
