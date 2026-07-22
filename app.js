@@ -463,8 +463,8 @@ function renderHome() {
             <img src="/assets/images/26499-0.webp" alt="غيّر شخصية سيارتك كاملة">
             <span class="promo-shade"></span>
             <div>
-              <p>بودي كت كاربون</p>
-              <h3>غيّر شخصية سيارتك كاملة</h3>
+              <p class="text-xs font-bold tracking-widest text-accent">بودي كت كاربون</p>
+              <p class="mt-2 text-2xl font-black md:text-3xl">غيّر شخصية سيارتك كاملة</p>
               <span class="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-bold text-accent-ink transition group-hover:brightness-110">تصفح البودي كت ←</span>
             </div>
           </a>
@@ -472,8 +472,8 @@ function renderHome() {
             <img src="/assets/images/26476-0.webp" alt="لمستك الخاصة بين يدينك">
             <span class="promo-shade"></span>
             <div>
-              <p>ستيرنق مخصص</p>
-              <h3>لمستك الخاصة بين يدينك</h3>
+              <p class="text-xs font-bold tracking-widest text-accent">ستيرنق مخصص</p>
+              <p class="mt-2 text-2xl font-black md:text-3xl">لمستك الخاصة بين يدينك</p>
               <span class="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-bold text-accent-ink transition group-hover:brightness-110">تصفح الستيرنق ←</span>
             </div>
           </a>
