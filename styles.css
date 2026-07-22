@@ -419,14 +419,13 @@ html.app-booting .site-footer { visibility: hidden; }
   display: flex;
   align-items: center;
   gap: 12px;
-  opacity: .5;
+  opacity: .82;
 }
 .marquee-track img {
   width: auto;
   max-width: 64px;
   height: 28px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
 }
 .marquee-track b {
   color: var(--ink-2);
