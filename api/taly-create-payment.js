@@ -218,7 +218,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify(payload),
     });
 
-    const paymentUrl = String(pickDeep(talyData, ["checkout_url", "checkoutUrl"]));
+    const paymentUrl = String(pickDeep(talyData, ["secureCheckoutUrl", "checkout_url", "checkoutUrl"]));
     const talyOrderId = String(pickDeep(talyData, ["OrderID", "orderID", "orderId", "order_id", "id"]));
     const orderReference = String(pickDeep(talyData, ["orderToken", "order_token", "orderReference", "order_reference", "reference"]));
 
