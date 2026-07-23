@@ -39,6 +39,7 @@
           <nav>
             <button class="nav-item active" type="button" data-panel="productsPanel">المنتجات</button>
             <button class="nav-item" type="button" data-panel="ordersPanel">الطلبات</button>
+            <button class="nav-item" type="button" data-panel="customersPanel">العملاء</button>
             <a class="nav-item" href="/" target="_blank" rel="noreferrer">فتح الموقع</a>
           </nav>
           <button class="logout-button" id="logoutButton" type="button">تسجيل خروج</button>
@@ -120,6 +121,33 @@
                   </tr>
                 </thead>
                 <tbody id="ordersTable"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel hidden" id="customersPanel">
+            <div class="panel-head">
+              <div>
+                <h2>العملاء</h2>
+                <p>حسابات العملاء المسجلة وربطها بالطلبات.</p>
+              </div>
+              <div class="toolbar single">
+                <input id="customerSearch" type="search" placeholder="بحث باسم العميل أو البريد أو الهاتف..." />
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>العميل</th>
+                    <th>الهاتف</th>
+                    <th>عدد الطلبات</th>
+                    <th>إجمالي الطلبات</th>
+                    <th>آخر طلب</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="customersTable"></tbody>
               </table>
             </div>
           </section>

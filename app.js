@@ -4,12 +4,15 @@ const state = {
   brands: [],
   types: [],
   cart: JSON.parse(localStorage.getItem("autoobenz-cart-v1") || "[]"),
+  customerSession: null,
+  customerProfile: null,
 };
 
 const app = document.querySelector("#app");
 const cartCount = document.querySelector("#cartCount");
 const cartDrawer = document.querySelector("#cartDrawer");
 const mobileNav = document.querySelector("#mobileNav");
+const CUSTOMER_SESSION_KEY = "autoobenz-customer-session-v1";
 let revealObserver = null;
 
 document.documentElement.classList.add("app-booting");
@@ -128,10 +131,124 @@ const brandModels = (brandSlug) => {
     .sort((a, b) => a.name.localeCompare(b.name));
 };
 
+const getCustomerSession = () => {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOMER_SESSION_KEY) || "null");
+  } catch {
+    return null;
+  }
+};
+
+const setCustomerSession = (session) => {
+  state.customerSession = session;
+  state.customerProfile = session ? state.customerProfile : null;
+  if (session) localStorage.setItem(CUSTOMER_SESSION_KEY, JSON.stringify(session));
+  else localStorage.removeItem(CUSTOMER_SESSION_KEY);
+  updateCustomerLinks();
+};
+
+function updateCustomerLinks() {
+  document.querySelectorAll("[data-account-link]").forEach((link) => {
+    link.textContent = state.customerSession ? "حسابي" : "دخول العملاء";
+  });
+}
+
 const supabaseHeaders = () => ({
   apikey: window.AUTOOBENZ_SUPABASE.publishableKey,
-  Authorization: `Bearer ${window.AUTOOBENZ_SUPABASE.publishableKey}`,
+  Authorization: `Bearer ${state.customerSession?.access_token || window.AUTOOBENZ_SUPABASE.publishableKey}`,
 });
+
+async function supabaseAuth(path, body, options = {}) {
+  const config = window.AUTOOBENZ_SUPABASE;
+  if (!config?.url || !config?.publishableKey) throw new Error("Supabase is not configured.");
+  const response = await fetch(`${config.url}/auth/v1/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: config.publishableKey,
+      "Content-Type": "application/json",
+      ...(state.customerSession?.access_token ? { Authorization: `Bearer ${state.customerSession.access_token}` } : {}),
+      ...(options.headers || {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const result = await readResponse(response);
+  if (!response.ok) throw new Error(result?.error_description || result?.msg || result?.message || "تعذر تنفيذ العملية.");
+  return result;
+}
+
+async function validateCustomerSession() {
+  if (!state.customerSession?.access_token) return false;
+  const config = window.AUTOOBENZ_SUPABASE;
+  const response = await fetch(`${config.url}/auth/v1/user`, { headers: supabaseHeaders() });
+  const user = await readResponse(response);
+  if (!response.ok) {
+    setCustomerSession(null);
+    return false;
+  }
+  state.customerSession = { ...state.customerSession, user };
+  localStorage.setItem(CUSTOMER_SESSION_KEY, JSON.stringify(state.customerSession));
+  return true;
+}
+
+async function customerSignIn(email, password) {
+  const session = await supabaseAuth("token?grant_type=password", { email, password });
+  setCustomerSession(session);
+  await loadCustomerProfile();
+  return session;
+}
+
+async function customerSignUp({ email, password, fullName, phone }) {
+  const session = await supabaseAuth("signup", {
+    email,
+    password,
+    data: { full_name: fullName, phone },
+  });
+  if (session?.access_token) {
+    setCustomerSession(session);
+    await saveCustomerProfile({ full_name: fullName, phone, email });
+    await loadCustomerProfile();
+  }
+  return session;
+}
+
+async function customerSignOut() {
+  if (state.customerSession?.access_token) {
+    await supabaseAuth("logout", null).catch(() => null);
+  }
+  setCustomerSession(null);
+  navigate("/login");
+}
+
+async function loadCustomerProfile() {
+  const user = state.customerSession?.user;
+  if (!user?.id) return null;
+  try {
+    const rows = await supabaseFetch(`customer_profiles?select=*&id=eq.${encodeURIComponent(user.id)}&limit=1`);
+    state.customerProfile = rows?.[0] || null;
+  } catch (error) {
+    console.warn("Customer profile is not ready.", error);
+    state.customerProfile = null;
+  }
+  return state.customerProfile;
+}
+
+async function saveCustomerProfile(profile = {}) {
+  const user = state.customerSession?.user;
+  if (!user?.id) return null;
+  const payload = {
+    id: user.id,
+    email: profile.email || user.email || state.customerProfile?.email || "",
+    full_name: profile.full_name || state.customerProfile?.full_name || "",
+    phone: profile.phone || state.customerProfile?.phone || "",
+  };
+  const rows = await supabaseWrite("customer_profiles?on_conflict=id", {
+    method: "POST",
+    headers: { Prefer: "return=representation,resolution=merge-duplicates" },
+    body: JSON.stringify(payload),
+  });
+  state.customerProfile = rows?.[0] || payload;
+  return state.customerProfile;
+}
 
 const supabaseFetch = async (path) => {
   const config = window.AUTOOBENZ_SUPABASE;
@@ -920,8 +1037,202 @@ function validatePhoneForCountry(phone, country) {
   return "";
 }
 
+function renderAuth(mode = "login", notice = "") {
+  const isRegister = mode === "register";
+  app.innerHTML = `
+    <section class="auth-page">
+      <div class="container">
+        <div class="auth-card">
+          <div class="auth-head">
+            <span></span>
+            <h1>${isRegister ? "إنشاء حساب عميل" : "دخول العملاء"}</h1>
+            <p>${isRegister ? "أنشئ حسابك لمتابعة طلباتك وحفظ بياناتك للطلبات القادمة." : "ادخل بحسابك لمتابعة الطلبات وحالة الدفع والشحن."}</p>
+          </div>
+          <div class="auth-tabs">
+            <a class="${!isRegister ? "active" : ""}" href="/login" data-link>دخول</a>
+            <a class="${isRegister ? "active" : ""}" href="/register" data-link>تسجيل جديد</a>
+          </div>
+          ${notice ? `<p class="auth-notice">${escapeHtml(notice)}</p>` : ""}
+          <form class="auth-form" id="customerAuthForm">
+            ${isRegister ? `
+              <label>الاسم الكامل<input name="full_name" autocomplete="name" required></label>
+              <label>رقم الهاتف<input name="phone" inputmode="tel" dir="ltr" autocomplete="tel" placeholder="+965 0000 0000" required></label>
+            ` : ""}
+            <label>البريد الإلكتروني<input name="email" type="email" autocomplete="email" required></label>
+            <label>كلمة المرور<input name="password" type="password" autocomplete="${isRegister ? "new-password" : "current-password"}" minlength="6" required></label>
+            <button class="primary-button" type="submit">${isRegister ? "إنشاء الحساب" : "دخول"}</button>
+            <p class="form-message" id="customerAuthMessage"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+  `;
+  document.querySelector("#customerAuthForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector("button");
+    const message = document.querySelector("#customerAuthMessage");
+    const formData = new FormData(form);
+    message.className = "form-message";
+    message.textContent = isRegister ? "جاري إنشاء الحساب..." : "جاري تسجيل الدخول...";
+    button.disabled = true;
+    try {
+      if (isRegister) {
+        const result = await customerSignUp({
+          email: formData.get("email").trim(),
+          password: formData.get("password"),
+          fullName: formData.get("full_name").trim(),
+          phone: formData.get("phone").trim(),
+        });
+        if (!result?.access_token) {
+          message.classList.add("success");
+          message.textContent = "تم إنشاء الحساب. إذا طلب Supabase تأكيد البريد، افتح بريدك ثم سجل الدخول.";
+          return;
+        }
+      } else {
+        await customerSignIn(formData.get("email").trim(), formData.get("password"));
+      }
+      navigate("/account");
+    } catch (error) {
+      message.classList.add("error");
+      message.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+async function loadCustomerOrders() {
+  const user = state.customerSession?.user;
+  if (!user?.id) return [];
+  const id = encodeURIComponent(user.id);
+  const email = encodeURIComponent(user.email || "");
+  try {
+    return await supabaseFetch(`orders?select=*,order_items(*)&or=(customer_id.eq.${id},customer_email.eq.${email})&order=created_at.desc`);
+  } catch (error) {
+    console.warn("Customer orders are not ready.", error);
+    return [];
+  }
+}
+
+function customerOrderStatus(order) {
+  const labels = {
+    new: "جديد",
+    processing: "قيد التجهيز",
+    shipped: "تم الشحن",
+    completed: "مكتمل",
+    cancelled: "ملغي",
+  };
+  return labels[order.status] || order.status || "جديد";
+}
+
+function renderCustomerOrders(orders) {
+  const target = document.querySelector("#customerOrders");
+  if (!target) return;
+  if (!orders.length) {
+    target.innerHTML = `
+      <div class="empty-state compact">
+        <b>لا توجد طلبات حتى الآن</b>
+        <p>طلباتك الجديدة ستظهر هنا بعد إتمام الطلب من المتجر.</p>
+        <a class="primary-button" href="/shop" data-link>تصفح المنتجات</a>
+      </div>
+    `;
+    return;
+  }
+  target.innerHTML = orders.map((order) => `
+    <article class="account-order">
+      <div>
+        <small>${new Date(order.created_at).toLocaleString("ar-KW")}</small>
+        <h3 dir="ltr">${escapeHtml(order.order_number || order.id)}</h3>
+        <p>${escapeHtml([order.shipping_country, order.shipping_city].filter(Boolean).join(" - "))}</p>
+      </div>
+      <div>
+        <span class="status-pill">${escapeHtml(customerOrderStatus(order))}</span>
+        <b>${money(order.total_kwd)}</b>
+      </div>
+      <details>
+        <summary>تفاصيل الطلب</summary>
+        <div class="account-items">
+          ${(order.order_items || []).map((item) => `
+            <div>
+              <span>${escapeHtml(item.product_title || item.product_slug || "-")}</span>
+              <strong>${Number(item.quantity || 0)} × ${money(item.unit_price_kwd)}</strong>
+            </div>
+          `).join("") || `<p>لا توجد منتجات مرفقة.</p>`}
+        </div>
+      </details>
+    </article>
+  `).join("");
+}
+
+function renderAccount() {
+  if (!state.customerSession?.user) {
+    renderAuth("login", "سجل دخولك أو أنشئ حساباً لمتابعة طلباتك.");
+    return;
+  }
+  const user = state.customerSession.user;
+  const profile = state.customerProfile || {};
+  app.innerHTML = `
+    <section class="account-page">
+      <div class="container">
+        <div class="account-head">
+          <div>
+            <span></span>
+            <h1>حسابي</h1>
+            <p>تابع طلباتك وحدث بياناتك الأساسية.</p>
+          </div>
+          <button class="ghost-button" id="customerLogoutButton" type="button">تسجيل خروج</button>
+        </div>
+        <div class="account-grid">
+          <form class="account-card" id="customerProfileForm">
+            <h2>بيانات العميل</h2>
+            <label>الاسم الكامل<input name="full_name" autocomplete="name" value="${escapeHtml(profile.full_name || user.user_metadata?.full_name || "")}"></label>
+            <label>رقم الهاتف<input name="phone" inputmode="tel" dir="ltr" autocomplete="tel" value="${escapeHtml(profile.phone || user.user_metadata?.phone || "")}"></label>
+            <label>البريد الإلكتروني<input name="email" type="email" value="${escapeHtml(profile.email || user.email || "")}" readonly></label>
+            <button class="primary-button" type="submit">حفظ البيانات</button>
+            <p class="form-message" id="profileMessage"></p>
+          </form>
+          <div class="account-card account-orders-card">
+            <h2>طلباتي</h2>
+            <div id="customerOrders" class="account-orders-loading">جاري تحميل الطلبات...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+  document.querySelector("#customerLogoutButton").addEventListener("click", customerSignOut);
+  document.querySelector("#customerProfileForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = document.querySelector("#profileMessage");
+    const button = event.currentTarget.querySelector("button");
+    const formData = new FormData(event.currentTarget);
+    message.className = "form-message";
+    message.textContent = "جاري الحفظ...";
+    button.disabled = true;
+    try {
+      await saveCustomerProfile({
+        full_name: formData.get("full_name").trim(),
+        phone: formData.get("phone").trim(),
+        email: user.email,
+      });
+      message.classList.add("success");
+      message.textContent = "تم حفظ البيانات.";
+    } catch (error) {
+      message.classList.add("error");
+      message.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+  loadCustomerOrders().then(renderCustomerOrders);
+}
+
 function renderCheckout() {
   const lines = cartLines();
+  const profile = state.customerProfile || {};
+  const customerName = profile.full_name || state.customerSession?.user?.user_metadata?.full_name || "";
+  const customerPhoneValue = profile.phone || "+965 ";
+  const customerEmail = profile.email || state.customerSession?.user?.email || "";
   if (!lines.length) {
     app.innerHTML = `
       <section class="checkout-page">
@@ -948,12 +1259,13 @@ function renderCheckout() {
         </div>
         <div class="checkout-grid">
           <form class="checkout-form" id="checkoutForm">
-            <label>الاسم الكامل<input name="customer_name" required autocomplete="name"></label>
+            ${state.customerSession?.user ? `<p class="checkout-account-note span-2">الطلب سيتم ربطه بحسابك: ${escapeHtml(state.customerSession.user.email || "")}</p>` : `<p class="checkout-account-note span-2">لديك حساب؟ <a href="/login" data-link>سجل الدخول</a> لمتابعة الطلب لاحقاً.</p>`}
+            <label>الاسم الكامل<input name="customer_name" required autocomplete="name" value="${escapeHtml(customerName)}"></label>
             <label>الدولة<select name="shipping_country" id="shippingCountry" required>${countryOptions()}</select></label>
             <label>المدينة / المنطقة<select name="shipping_city" id="shippingCity" required>${cityOptions("الكويت")}</select></label>
             <label class="span-2">العنوان التفصيلي<textarea name="shipping_address" rows="4" required></textarea></label>
-            <label>رقم الهاتف<input name="customer_phone" id="customerPhone" required inputmode="tel" dir="ltr" value="+965 " placeholder="+965 0000 0000"></label>
-            <label>البريد الإلكتروني<input name="customer_email" type="email" autocomplete="email"></label>
+            <label>رقم الهاتف<input name="customer_phone" id="customerPhone" required inputmode="tel" dir="ltr" value="${escapeHtml(customerPhoneValue)}" placeholder="+965 0000 0000"></label>
+            <label>البريد الإلكتروني<input name="customer_email" type="email" autocomplete="email" value="${escapeHtml(customerEmail)}"></label>
             <label class="span-2">ملاحظات إضافية<textarea name="notes" rows="3" placeholder="موديل السيارة، وقت التواصل المناسب، أو أي ملاحظات"></textarea></label>
             <div class="payment-options span-2" role="radiogroup" aria-label="طريقة الدفع">
               <p>طريقة الدفع</p>
@@ -1042,27 +1354,48 @@ async function submitCheckout(event) {
   const paymentMethod = formData.get("payment_method") || "sadadpay";
   const subtotal = cartSubtotal();
   const orderNumber = `AB-${Date.now().toString().slice(-8)}`;
+  const customerEmail = formData.get("customer_email") || state.customerSession?.user?.email || "";
   try {
-    const orderRows = await supabaseWrite("orders", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({
-        order_number: orderNumber,
-        customer_name: formData.get("customer_name"),
-        customer_phone: formData.get("customer_phone"),
-        customer_email: formData.get("customer_email"),
-        shipping_country: formData.get("shipping_country") || "Kuwait",
-        shipping_city: formData.get("shipping_city"),
-        shipping_address: formData.get("shipping_address"),
-        notes: formData.get("notes"),
-        subtotal_kwd: subtotal,
-        shipping_kwd: 0,
-        total_kwd: subtotal,
-        status: "new",
-        payment_status: "pending",
-        payment_method: paymentMethod,
-      }),
-    });
+    if (state.customerSession?.user?.id) {
+      await saveCustomerProfile({
+        full_name: formData.get("customer_name"),
+        phone: formData.get("customer_phone"),
+        email: customerEmail,
+      }).catch((error) => console.warn("Could not update customer profile.", error));
+    }
+    const orderPayload = {
+      order_number: orderNumber,
+      customer_id: state.customerSession?.user?.id || null,
+      customer_name: formData.get("customer_name"),
+      customer_phone: formData.get("customer_phone"),
+      customer_email: customerEmail,
+      shipping_country: formData.get("shipping_country") || "Kuwait",
+      shipping_city: formData.get("shipping_city"),
+      shipping_address: formData.get("shipping_address"),
+      notes: formData.get("notes"),
+      subtotal_kwd: subtotal,
+      shipping_kwd: 0,
+      total_kwd: subtotal,
+      status: "new",
+      payment_status: "pending",
+      payment_method: paymentMethod,
+    };
+    let orderRows;
+    try {
+      orderRows = await supabaseWrite("orders", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(orderPayload),
+      });
+    } catch (error) {
+      if (!String(error.message || "").includes("customer_id")) throw error;
+      delete orderPayload.customer_id;
+      orderRows = await supabaseWrite("orders", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify(orderPayload),
+      });
+    }
     const order = orderRows?.[0];
     if (!order?.id) throw new Error("تعذر إنشاء رقم الطلب.");
     await supabaseWrite("order_items", {
@@ -1179,6 +1512,9 @@ function applyRevealMotion() {
     ".checkout-form",
     ".checkout-summary",
     ".success-panel",
+    ".auth-card",
+    ".account-card",
+    ".account-order",
   ].join(",");
   const elements = [...app.querySelectorAll(selector)];
   elements.forEach((element, index) => {
@@ -1205,6 +1541,9 @@ function render(options = {}) {
   else if (location.pathname === "/shop") renderShop();
   else if (location.pathname === "/checkout") renderCheckout();
   else if (location.pathname === "/order-success") renderOrderSuccess();
+  else if (location.pathname === "/login") renderAuth("login");
+  else if (location.pathname === "/register") renderAuth("register");
+  else if (location.pathname === "/account") renderAccount();
   else if (location.pathname === "/vin-check") renderVin();
   else if (location.pathname.startsWith("/product/")) renderProduct(decodeURIComponent(location.pathname.split("/product/")[1]));
   else renderNotFound();
@@ -1215,6 +1554,10 @@ function render(options = {}) {
 
 async function boot() {
   resetPageScroll();
+  setCustomerSession(getCustomerSession());
+  if (state.customerSession?.access_token && await validateCustomerSession()) {
+    await loadCustomerProfile();
+  }
   const data = await localData().catch(async (error) => {
     console.warn("Local data is not ready, trying Supabase.", error);
     return supabaseData();

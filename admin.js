@@ -6,6 +6,7 @@ const adminState = {
   session: null,
   products: [],
   orders: [],
+  customers: [],
   brands: [],
   categories: [],
   types: [],
@@ -119,15 +120,17 @@ function showLogin() {
 
 async function loadData() {
   const select = "*,brands(id,slug,name_ar,name_en),categories(id,slug,name_ar,name_en),product_types(id,slug,name_ar,name_en),product_images(id,image_url,sort_order)";
-  const [products, brands, categories, types, orders] = await Promise.all([
+  const [products, brands, categories, types, orders, customers] = await Promise.all([
     supabaseRest(`products?select=${select}&order=created_at.desc`),
     supabaseRest("brands?select=*&order=sort_order.asc"),
     supabaseRest("categories?select=*&order=sort_order.asc"),
     supabaseRest("product_types?select=*&order=sort_order.asc"),
     loadOrders(),
+    loadCustomers(),
   ]);
   adminState.products = products || [];
   adminState.orders = orders || [];
+  adminState.customers = customers || [];
   adminState.brands = brands || [];
   adminState.categories = categories || [];
   adminState.types = types || [];
@@ -139,6 +142,15 @@ async function loadOrders() {
     return await supabaseRest("orders?select=*,order_items(*)&order=created_at.desc");
   } catch (error) {
     console.warn("Orders table is not ready yet.", error);
+    return [];
+  }
+}
+
+async function loadCustomers() {
+  try {
+    return await supabaseRest("customer_profiles?select=*&order=created_at.desc");
+  } catch (error) {
+    console.warn("Customer profiles table is not ready yet.", error);
     return [];
   }
 }
@@ -159,6 +171,7 @@ function renderStats() {
     ["مخفية", hidden],
     ["الأكثر طلباً", featured],
     ["طلبات جديدة", adminState.orders.filter((order) => order.status === "new").length],
+    ["العملاء", customerRows().length],
   ].map(([label, value]) => `<div class="stat-card"><span>${label}</span><b>${value}</b></div>`).join("");
 }
 
@@ -256,6 +269,85 @@ function renderOrders() {
   table.innerHTML = rows || `<tr><td colspan="7"><div class="empty-panel"><b>ما في طلبات</b><span>الطلبات الجديدة ستظهر هنا بعد إتمام العميل للطلب.</span></div></td></tr>`;
 }
 
+function customerRows() {
+  const rows = new Map();
+  adminState.customers.forEach((customer) => {
+    const key = customer.id || customer.email || customer.phone;
+    if (!key) return;
+    rows.set(key, {
+      id: customer.id,
+      full_name: customer.full_name || "-",
+      email: customer.email || "",
+      phone: customer.phone || "",
+      created_at: customer.created_at,
+      orders: [],
+    });
+  });
+  adminState.orders.forEach((order) => {
+    const profileKey = order.customer_id || order.customer_email || order.customer_phone;
+    if (!profileKey) return;
+    if (!rows.has(profileKey)) {
+      rows.set(profileKey, {
+        id: order.customer_id,
+        full_name: order.customer_name || "-",
+        email: order.customer_email || "",
+        phone: order.customer_phone || "",
+        created_at: order.created_at,
+        orders: [],
+      });
+    }
+    rows.get(profileKey).orders.push(order);
+  });
+  adminState.orders.forEach((order) => {
+    rows.forEach((customer) => {
+      const emailMatches = customer.email && order.customer_email && customer.email.toLowerCase() === order.customer_email.toLowerCase();
+      const idMatches = customer.id && order.customer_id && customer.id === order.customer_id;
+      if ((emailMatches || idMatches) && !customer.orders.some((item) => item.id === order.id)) customer.orders.push(order);
+    });
+  });
+  return [...rows.values()].sort((a, b) => {
+    const lastA = a.orders[0]?.created_at || a.created_at || "";
+    const lastB = b.orders[0]?.created_at || b.created_at || "";
+    return String(lastB).localeCompare(String(lastA));
+  });
+}
+
+function filteredCustomers() {
+  const query = $("#customerSearch")?.value.trim().toLowerCase() || "";
+  return customerRows().filter((customer) => {
+    const haystack = `${customer.full_name || ""} ${customer.email || ""} ${customer.phone || ""}`.toLowerCase();
+    return !query || haystack.includes(query);
+  });
+}
+
+function renderCustomers() {
+  const table = $("#customersTable");
+  if (!table) return;
+  const rows = filteredCustomers().map((customer) => {
+    const orders = customer.orders || [];
+    const total = orders.reduce((sum, order) => sum + Number(order.total_kwd || 0), 0);
+    const lastOrder = orders[0];
+    return `
+      <tr>
+        <td>
+          <div class="customer-cell">
+            <b>${escapeHtml(customer.full_name || "-")}</b>
+            <small>${escapeHtml(customer.email || "-")}</small>
+          </div>
+        </td>
+        <td dir="ltr">${escapeHtml(customer.phone || "-")}</td>
+        <td>${orders.length}</td>
+        <td>${money(total)}</td>
+        <td>${lastOrder ? `${escapeHtml(lastOrder.order_number || lastOrder.id)}<small>${new Date(lastOrder.created_at).toLocaleString("ar-KW")}</small>` : "-"}</td>
+        <td>
+          ${customer.phone ? `<a class="small-button" href="https://wa.me/${String(customer.phone).replace(/[^0-9]/g, "")}" target="_blank" rel="noreferrer">واتساب</a>` : ""}
+        </td>
+      </tr>
+    `;
+  }).join("");
+  table.innerHTML = rows || `<tr><td colspan="6"><div class="empty-panel"><b>لا يوجد عملاء</b><span>حسابات العملاء والطلبات ستظهر هنا.</span></div></td></tr>`;
+}
+
 function renderOptions() {
   $("#productBrand").innerHTML = `<option value="">بدون ماركة</option>${adminState.brands.map((brand) => (
     `<option value="${brand.id}">${escapeHtml(brand.name_ar)} — ${escapeHtml(brand.name_en || brand.slug)}</option>`
@@ -319,6 +411,7 @@ function renderEverything() {
   renderOptions();
   renderProducts();
   renderOrders();
+  renderCustomers();
 }
 
 function openOrderModal(order) {
@@ -364,6 +457,7 @@ async function updateOrderStatus(id, status) {
   const order = adminState.orders.find((item) => String(item.id) === String(id));
   if (order) order.status = status;
   renderStats();
+  renderCustomers();
 }
 
 function openProductModal(product = null) {
@@ -547,7 +641,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       $$(".nav-item[data-panel]").forEach((entry) => entry.classList.remove("active"));
       button.classList.add("active");
-      ["productsPanel", "ordersPanel"].forEach((id) => $(`#${id}`).classList.toggle("hidden", id !== button.dataset.panel));
+      ["productsPanel", "ordersPanel", "customersPanel"].forEach((id) => $(`#${id}`).classList.toggle("hidden", id !== button.dataset.panel));
     });
   });
 
@@ -555,6 +649,7 @@ function bindEvents() {
   $("#activeFilter").addEventListener("change", renderProducts);
   $("#orderSearch").addEventListener("input", renderOrders);
   $("#orderStatusFilter").addEventListener("change", renderOrders);
+  $("#customerSearch")?.addEventListener("input", renderCustomers);
   $("#newProductButton").addEventListener("click", () => openProductModal());
   $("#closeModalButton").addEventListener("click", closeProductModal);
   $("#productModal").addEventListener("click", (event) => {

@@ -247,6 +247,27 @@ html.app-booting .site-footer { visibility: hidden; }
 }
 .primary-button { background: var(--accent); color: var(--accent-ink); }
 .secondary-button { background: transparent; border-color: var(--line-strong); color: var(--ink); }
+.ghost-button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-2);
+  padding: 0 16px;
+  font-weight: 800;
+}
+.ghost-button:hover { color: var(--ink); border-color: var(--line-strong); }
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
 .section { padding: 56px 0; }
 .brands-section {
   padding: 64px 0 48px;
@@ -814,6 +835,17 @@ html.app-booting .site-footer { visibility: hidden; }
 .checkout-form textarea { padding-block: 12px; resize: vertical; }
 .checkout-form input:focus, .checkout-form select:focus, .checkout-form textarea:focus { border-color: var(--accent); }
 .span-2 { grid-column: span 2; }
+.checkout-account-note {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
+  color: var(--ink-2);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.checkout-account-note a { color: var(--accent); font-weight: 800; }
 .payment-options {
   display: grid;
   gap: 10px;
@@ -911,6 +943,146 @@ html.app-booting .site-footer { visibility: hidden; }
 .success-panel p { color: var(--ink-2); line-height: 1.9; }
 .success-panel .product-actions { justify-content: center; }
 
+.auth-page, .account-page { padding: 48px 0 78px; }
+.auth-card {
+  width: min(520px, 100%);
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 24px;
+}
+.auth-head span, .account-head span {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.auth-head h1, .account-head h1 { margin: 0; font-size: 30px; line-height: 1.35; }
+.auth-head p, .account-head p { margin: 8px 0 0; color: var(--ink-2); line-height: 1.8; }
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 22px 0 18px;
+}
+.auth-tabs a {
+  display: grid;
+  place-items: center;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink-2);
+  font-weight: 800;
+  transition: color .2s ease, border-color .2s ease, background .2s ease;
+}
+.auth-tabs a:hover, .auth-tabs a.active {
+  color: var(--ink);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.auth-form, .account-card {
+  display: grid;
+  gap: 14px;
+}
+.auth-form label, .account-card label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+.auth-form input, .account-card input {
+  width: 100%;
+  height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--surface-2);
+  color: var(--ink);
+  padding: 0 12px;
+  font-size: 16px;
+}
+.auth-form input:focus, .account-card input:focus { border-color: var(--accent); }
+.auth-notice {
+  margin: 0 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  padding: 12px 14px;
+  line-height: 1.8;
+}
+.form-message { min-height: 20px; margin: 0; color: var(--ink-3); font-size: 13px; }
+.form-message.error { color: var(--danger); }
+.form-message.success { color: var(--success); }
+.account-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.account-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, .75fr) minmax(0, 1.25fr);
+  gap: 18px;
+  align-items: start;
+}
+.account-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 20px;
+}
+.account-card h2 { margin: 0; font-size: 22px; }
+.account-orders-loading { color: var(--ink-3); }
+.account-order {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  padding: 14px;
+}
+.account-order small { color: var(--ink-3); }
+.account-order h3 { margin: 4px 0 2px; font-size: 18px; }
+.account-order p { margin: 0; color: var(--ink-2); font-size: 13px; }
+.account-order > div:nth-child(2) {
+  display: grid;
+  justify-items: end;
+  align-content: start;
+  gap: 8px;
+}
+.account-order > div:nth-child(2) b { color: var(--accent); }
+.account-order details {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.account-order summary {
+  cursor: pointer;
+  color: var(--ink-2);
+  font-weight: 800;
+}
+.account-items {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.account-items > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.account-items strong { color: var(--ink); white-space: nowrap; }
+.empty-state.compact { padding: 28px 16px; }
+
 @media (max-width: 920px) {
   .desktop-nav, .whatsapp-link { display: none; }
   .mobile-only { display: grid; }
@@ -926,7 +1098,7 @@ html.app-booting .site-footer { visibility: hidden; }
   .benefits-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .promo-grid { grid-template-columns: 1fr; }
   .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .product-detail, .footer-grid, .checkout-grid { grid-template-columns: 1fr; }
+  .product-detail, .footer-grid, .checkout-grid, .account-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {
@@ -962,6 +1134,9 @@ html.app-booting .site-footer { visibility: hidden; }
   .product-actions, .vin-row { flex-direction: column; }
   .checkout-form { grid-template-columns: 1fr; }
   .span-2 { grid-column: span 1; }
+  .account-head { align-items: stretch; flex-direction: column; }
+  .account-order { grid-template-columns: 1fr; }
+  .account-order > div:nth-child(2) { justify-items: start; }
   .summary-line { grid-template-columns: 52px minmax(0, 1fr); }
   .summary-line strong { grid-column: 2; }
   .drawer-panel { width: 100%; }
