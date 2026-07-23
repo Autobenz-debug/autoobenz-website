@@ -4,8 +4,16 @@ create table if not exists public.customer_profiles (
   updated_at timestamptz not null default now(),
   full_name text,
   phone text,
-  email text
+  email text,
+  shipping_country text,
+  shipping_city text,
+  shipping_address text
 );
+
+alter table public.customer_profiles
+add column if not exists shipping_country text,
+add column if not exists shipping_city text,
+add column if not exists shipping_address text;
 
 alter table public.orders
 add column if not exists customer_id uuid references auth.users(id) on delete set null;

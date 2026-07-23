@@ -197,15 +197,28 @@ async function customerSignIn(email, password) {
   return session;
 }
 
-async function customerSignUp({ email, password, fullName, phone }) {
+async function customerSignUp({ email, password, fullName, phone, shippingCountry, shippingCity, shippingAddress }) {
   const session = await supabaseAuth("signup", {
     email,
     password,
-    data: { full_name: fullName, phone },
+    data: {
+      full_name: fullName,
+      phone,
+      shipping_country: shippingCountry,
+      shipping_city: shippingCity,
+      shipping_address: shippingAddress,
+    },
   });
   if (session?.access_token) {
     setCustomerSession(session);
-    await saveCustomerProfile({ full_name: fullName, phone, email });
+    await saveCustomerProfile({
+      full_name: fullName,
+      phone,
+      email,
+      shipping_country: shippingCountry,
+      shipping_city: shippingCity,
+      shipping_address: shippingAddress,
+    });
     await loadCustomerProfile();
   }
   return session;
@@ -240,6 +253,9 @@ async function saveCustomerProfile(profile = {}) {
     email: profile.email || user.email || state.customerProfile?.email || "",
     full_name: profile.full_name || state.customerProfile?.full_name || "",
     phone: profile.phone || state.customerProfile?.phone || "",
+    shipping_country: profile.shipping_country || state.customerProfile?.shipping_country || "",
+    shipping_city: profile.shipping_city || state.customerProfile?.shipping_city || "",
+    shipping_address: profile.shipping_address || state.customerProfile?.shipping_address || "",
   };
   const rows = await supabaseWrite("customer_profiles?on_conflict=id", {
     method: "POST",
@@ -963,12 +979,12 @@ const shippingLocations = {
   ],
 };
 
-const countryOptions = () => Object.keys(shippingLocations)
-  .map((country) => `<option value="${country}">${country}</option>`)
+const countryOptions = (selectedCountry = "الكويت") => Object.keys(shippingLocations)
+  .map((country) => `<option value="${country}" ${country === selectedCountry ? "selected" : ""}>${country}</option>`)
   .join("");
 
-const cityOptions = (country) => (shippingLocations[country] || [])
-  .map((city) => `<option value="${city}">${city}</option>`)
+const cityOptions = (country, selectedCity = "") => (shippingLocations[country] || [])
+  .map((city) => `<option value="${city}" ${city === selectedCity ? "selected" : ""}>${city}</option>`)
   .join("");
 
 const countryDialCodes = {
@@ -989,8 +1005,8 @@ const countryPhoneLengths = {
   "عمان": 8,
 };
 
-function syncPhoneDialCode(country, previousCountry = "") {
-  const phoneInput = document.querySelector("#customerPhone");
+function syncPhoneDialCode(country, previousCountry = "", inputSelector = "#customerPhone") {
+  const phoneInput = document.querySelector(inputSelector);
   if (!phoneInput) return;
   const nextCode = countryDialCodes[country] || "+965";
   const expectedLength = countryPhoneLengths[country] || 8;
@@ -1008,11 +1024,11 @@ function syncPhoneDialCode(country, previousCountry = "") {
   if (!current.startsWith("+")) {
     phoneInput.value = `${nextCode} ${current}`;
   }
-  limitPhoneForCountry(country);
+  limitPhoneForCountry(country, inputSelector);
 }
 
-function limitPhoneForCountry(country) {
-  const phoneInput = document.querySelector("#customerPhone");
+function limitPhoneForCountry(country, inputSelector = "#customerPhone") {
+  const phoneInput = document.querySelector(inputSelector);
   if (!phoneInput) return;
   const dialCode = countryDialCodes[country] || "+965";
   const expectedLength = countryPhoneLengths[country] || 8;
@@ -1039,6 +1055,7 @@ function validatePhoneForCountry(phone, country) {
 
 function renderAuth(mode = "login", notice = "") {
   const isRegister = mode === "register";
+  const defaultCountry = "الكويت";
   app.innerHTML = `
     <section class="auth-page">
       <div class="container">
@@ -1056,7 +1073,10 @@ function renderAuth(mode = "login", notice = "") {
           <form class="auth-form" id="customerAuthForm">
             ${isRegister ? `
               <label>الاسم الكامل<input name="full_name" autocomplete="name" required></label>
-              <label>رقم الهاتف<input name="phone" inputmode="tel" dir="ltr" autocomplete="tel" placeholder="+965 0000 0000" required></label>
+              <label>الدولة<select name="shipping_country" id="registerCountry" required>${countryOptions(defaultCountry)}</select></label>
+              <label>المدينة / المنطقة<select name="shipping_city" id="registerCity" required>${cityOptions(defaultCountry)}</select></label>
+              <label>رقم الهاتف<input name="phone" id="registerPhone" inputmode="tel" dir="ltr" autocomplete="tel" placeholder="+965 0000 0000" required></label>
+              <label class="span-2">العنوان التفصيلي<textarea name="shipping_address" rows="3" autocomplete="street-address" required></textarea></label>
             ` : ""}
             <label>البريد الإلكتروني<input name="email" type="email" autocomplete="email" required></label>
             <label>كلمة المرور<input name="password" type="password" autocomplete="${isRegister ? "new-password" : "current-password"}" minlength="6" required></label>
@@ -1067,6 +1087,25 @@ function renderAuth(mode = "login", notice = "") {
       </div>
     </section>
   `;
+  if (isRegister) {
+    const registerCountry = document.querySelector("#registerCountry");
+    const registerCity = document.querySelector("#registerCity");
+    const registerPhone = document.querySelector("#registerPhone");
+    registerCountry.dataset.previousCountry = registerCountry.value;
+    syncPhoneDialCode(registerCountry.value, "", "#registerPhone");
+    registerPhone.addEventListener("input", () => {
+      limitPhoneForCountry(registerCountry.value, "#registerPhone");
+    });
+    registerPhone.addEventListener("focus", () => {
+      syncPhoneDialCode(registerCountry.value, "", "#registerPhone");
+    });
+    registerCountry.addEventListener("change", (event) => {
+      const previousCountry = event.currentTarget.dataset.previousCountry || "";
+      registerCity.innerHTML = cityOptions(event.target.value);
+      syncPhoneDialCode(event.target.value, previousCountry, "#registerPhone");
+      event.currentTarget.dataset.previousCountry = event.target.value;
+    });
+  }
   document.querySelector("#customerAuthForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -1083,6 +1122,9 @@ function renderAuth(mode = "login", notice = "") {
           password: formData.get("password"),
           fullName: formData.get("full_name").trim(),
           phone: formData.get("phone").trim(),
+          shippingCountry: formData.get("shipping_country"),
+          shippingCity: formData.get("shipping_city"),
+          shippingAddress: formData.get("shipping_address").trim(),
         });
         if (!result?.access_token) {
           message.classList.add("success");
@@ -1172,6 +1214,8 @@ function renderAccount() {
   }
   const user = state.customerSession.user;
   const profile = state.customerProfile || {};
+  const profileCountry = profile.shipping_country || user.user_metadata?.shipping_country || "الكويت";
+  const profileCity = profile.shipping_city || user.user_metadata?.shipping_city || "";
   app.innerHTML = `
     <section class="account-page">
       <div class="container">
@@ -1187,8 +1231,11 @@ function renderAccount() {
           <form class="account-card" id="customerProfileForm">
             <h2>بيانات العميل</h2>
             <label>الاسم الكامل<input name="full_name" autocomplete="name" value="${escapeHtml(profile.full_name || user.user_metadata?.full_name || "")}"></label>
+            <label>الدولة<select name="shipping_country" id="profileCountry">${countryOptions(profileCountry)}</select></label>
+            <label>المدينة / المنطقة<select name="shipping_city" id="profileCity">${cityOptions(profileCountry, profileCity)}</select></label>
             <label>رقم الهاتف<input name="phone" inputmode="tel" dir="ltr" autocomplete="tel" value="${escapeHtml(profile.phone || user.user_metadata?.phone || "")}"></label>
             <label>البريد الإلكتروني<input name="email" type="email" value="${escapeHtml(profile.email || user.email || "")}" readonly></label>
+            <label class="span-2">العنوان التفصيلي<textarea name="shipping_address" rows="3" autocomplete="street-address">${escapeHtml(profile.shipping_address || user.user_metadata?.shipping_address || "")}</textarea></label>
             <button class="primary-button" type="submit">حفظ البيانات</button>
             <p class="form-message" id="profileMessage"></p>
           </form>
@@ -1201,6 +1248,9 @@ function renderAccount() {
     </section>
   `;
   document.querySelector("#customerLogoutButton").addEventListener("click", customerSignOut);
+  document.querySelector("#profileCountry").addEventListener("change", (event) => {
+    document.querySelector("#profileCity").innerHTML = cityOptions(event.target.value);
+  });
   document.querySelector("#customerProfileForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const message = document.querySelector("#profileMessage");
@@ -1214,6 +1264,9 @@ function renderAccount() {
         full_name: formData.get("full_name").trim(),
         phone: formData.get("phone").trim(),
         email: user.email,
+        shipping_country: formData.get("shipping_country"),
+        shipping_city: formData.get("shipping_city"),
+        shipping_address: formData.get("shipping_address").trim(),
       });
       message.classList.add("success");
       message.textContent = "تم حفظ البيانات.";
@@ -1233,6 +1286,9 @@ function renderCheckout() {
   const customerName = profile.full_name || state.customerSession?.user?.user_metadata?.full_name || "";
   const customerPhoneValue = profile.phone || "+965 ";
   const customerEmail = profile.email || state.customerSession?.user?.email || "";
+  const customerCountry = profile.shipping_country || state.customerSession?.user?.user_metadata?.shipping_country || "الكويت";
+  const customerCity = profile.shipping_city || state.customerSession?.user?.user_metadata?.shipping_city || "";
+  const customerAddress = profile.shipping_address || state.customerSession?.user?.user_metadata?.shipping_address || "";
   if (!lines.length) {
     app.innerHTML = `
       <section class="checkout-page">
@@ -1261,9 +1317,9 @@ function renderCheckout() {
           <form class="checkout-form" id="checkoutForm">
             ${state.customerSession?.user ? `<p class="checkout-account-note span-2">الطلب سيتم ربطه بحسابك: ${escapeHtml(state.customerSession.user.email || "")}</p>` : `<p class="checkout-account-note span-2">لديك حساب؟ <a href="/login" data-link>سجل الدخول</a> لمتابعة الطلب لاحقاً.</p>`}
             <label>الاسم الكامل<input name="customer_name" required autocomplete="name" value="${escapeHtml(customerName)}"></label>
-            <label>الدولة<select name="shipping_country" id="shippingCountry" required>${countryOptions()}</select></label>
-            <label>المدينة / المنطقة<select name="shipping_city" id="shippingCity" required>${cityOptions("الكويت")}</select></label>
-            <label class="span-2">العنوان التفصيلي<textarea name="shipping_address" rows="4" required></textarea></label>
+            <label>الدولة<select name="shipping_country" id="shippingCountry" required>${countryOptions(customerCountry)}</select></label>
+            <label>المدينة / المنطقة<select name="shipping_city" id="shippingCity" required>${cityOptions(customerCountry, customerCity)}</select></label>
+            <label class="span-2">العنوان التفصيلي<textarea name="shipping_address" rows="4" required>${escapeHtml(customerAddress)}</textarea></label>
             <label>رقم الهاتف<input name="customer_phone" id="customerPhone" required inputmode="tel" dir="ltr" value="${escapeHtml(customerPhoneValue)}" placeholder="+965 0000 0000"></label>
             <label>البريد الإلكتروني<input name="customer_email" type="email" autocomplete="email" value="${escapeHtml(customerEmail)}"></label>
             <label class="span-2">ملاحظات إضافية<textarea name="notes" rows="3" placeholder="موديل السيارة، وقت التواصل المناسب، أو أي ملاحظات"></textarea></label>
@@ -1361,6 +1417,9 @@ async function submitCheckout(event) {
         full_name: formData.get("customer_name"),
         phone: formData.get("customer_phone"),
         email: customerEmail,
+        shipping_country: formData.get("shipping_country"),
+        shipping_city: formData.get("shipping_city"),
+        shipping_address: formData.get("shipping_address"),
       }).catch((error) => console.warn("Could not update customer profile.", error));
     }
     const orderPayload = {
