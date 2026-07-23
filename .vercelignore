@@ -1,0 +1,5 @@
+.git
+.vercel
+scripts/
+*.sql
+README.md
