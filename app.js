@@ -4,6 +4,7 @@ const state = {
   brands: [],
   types: [],
   cart: JSON.parse(localStorage.getItem("autoobenz-cart-v1") || "[]"),
+  currency: localStorage.getItem("autoobenz-currency-v1") || "KWD",
   customerSession: null,
   customerProfile: null,
 };
@@ -13,6 +14,7 @@ const cartCount = document.querySelector("#cartCount");
 const cartDrawer = document.querySelector("#cartDrawer");
 const mobileNav = document.querySelector("#mobileNav");
 const CUSTOMER_SESSION_KEY = "autoobenz-customer-session-v1";
+const CURRENCY_KEY = "autoobenz-currency-v1";
 let revealObserver = null;
 
 document.documentElement.classList.add("app-booting");
@@ -30,10 +32,52 @@ function resetPageScroll() {
   window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 }
 
+const currencyRates = {
+  KWD: { label: "الكويت", code: "KWD", symbol: "د.ك", rate: 1, decimals: 1 },
+  SAR: { label: "السعودية", code: "SAR", symbol: "ر.س", rate: 12.2, decimals: 0 },
+  AED: { label: "الإمارات", code: "AED", symbol: "د.إ", rate: 11.94, decimals: 0 },
+  QAR: { label: "قطر", code: "QAR", symbol: "ر.ق", rate: 11.85, decimals: 0 },
+  BHD: { label: "البحرين", code: "BHD", symbol: "د.ب", rate: 1.22, decimals: 2 },
+  OMR: { label: "عمان", code: "OMR", symbol: "ر.ع", rate: 1.25, decimals: 2 },
+  USD: { label: "الدولار الأمريكي", code: "USD", symbol: "$", rate: 3.25, decimals: 0 },
+};
+const currencyOrder = ["KWD", "SAR", "AED", "QAR", "BHD", "OMR", "USD"];
+if (!currencyRates[state.currency]) state.currency = "KWD";
+
+const selectedCurrency = () => currencyRates[state.currency] || currencyRates.KWD;
+
 const money = (value) => {
+  const currency = selectedCurrency();
+  if (currency.code !== "KWD") {
+    const converted = Number(value || 0) * currency.rate;
+    const options = { maximumFractionDigits: currency.decimals };
+    const amount = converted.toLocaleString("en-US", options);
+    return currency.code === "USD" ? `${currency.symbol}${amount}` : `${amount} ${currency.symbol}`;
+  }
   const options = value >= 100 ? { maximumFractionDigits: 0 } : { maximumFractionDigits: 1 };
   return `${Number(value || 0).toLocaleString("en-US", options)} د.ك`;
 };
+
+const currencyOptions = () => currencyOrder.map((code) => {
+  const currency = currencyRates[code];
+  return `<option value="${code}" ${state.currency === code ? "selected" : ""}>${currency.label} - ${currency.code}</option>`;
+}).join("");
+
+function updateCurrencyControls() {
+  document.querySelectorAll("[data-currency-select]").forEach((select) => {
+    const focused = document.activeElement === select;
+    select.innerHTML = currencyOptions();
+    select.value = state.currency;
+    if (focused) select.focus();
+  });
+}
+
+function setCurrency(code) {
+  state.currency = currencyRates[code] ? code : "KWD";
+  localStorage.setItem(CURRENCY_KEY, state.currency);
+  updateCurrencyControls();
+  render({ resetScroll: false });
+}
 
 const imgLocal = (url) => {
   if (!url) return "/assets/images/autoobenz-logo.png";
@@ -396,6 +440,12 @@ document.addEventListener("touchstart", (event) => {
   const card = event.target.closest("[data-prefetch-image]");
   if (card) preloadImage(card.dataset.prefetchImage);
 }, { passive: true });
+
+document.addEventListener("change", (event) => {
+  const select = event.target.closest("[data-currency-select]");
+  if (!select) return;
+  setCurrency(select.value);
+});
 
 window.addEventListener("popstate", render);
 
@@ -1607,6 +1657,7 @@ function render(options = {}) {
   else if (location.pathname.startsWith("/product/")) renderProduct(decodeURIComponent(location.pathname.split("/product/")[1]));
   else renderNotFound();
   renderCart();
+  updateCurrencyControls();
   applyRevealMotion();
   if (options.resetScroll !== false) resetPageScroll();
 }
