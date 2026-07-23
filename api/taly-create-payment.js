@@ -1,4 +1,6 @@
 const TALY_LIVE_API = "https://api.taly.io";
+let cachedAccessToken = "";
+let cachedAccessTokenExpiresAt = 0;
 
 function json(res, statusCode, data) {
   res.statusCode = statusCode;
@@ -56,35 +58,6 @@ function pickDeep(obj, names) {
   return "";
 }
 
-function findUrlDeep(value) {
-  if (!value) return "";
-  if (typeof value === "string") {
-    const match = value.match(/https?:\/\/[^\s"'<>]+/i);
-    return match ? match[0] : "";
-  }
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const nested = findUrlDeep(item);
-      if (nested) return nested;
-    }
-    return "";
-  }
-  if (typeof value === "object") {
-    for (const [key, nestedValue] of Object.entries(value)) {
-      const keyLooksLikeLink = /url|link|redirect|checkout|payment|href/i.test(key);
-      if (keyLooksLikeLink && typeof nestedValue === "string") {
-        const nestedUrl = findUrlDeep(nestedValue);
-        if (nestedUrl) return nestedUrl;
-      }
-    }
-    for (const nestedValue of Object.values(value)) {
-      const nestedUrl = findUrlDeep(nestedValue);
-      if (nestedUrl) return nestedUrl;
-    }
-  }
-  return "";
-}
-
 async function talyFetch(path, options = {}) {
   const baseUrl = String(process.env.TALY_API_BASE_URL || TALY_LIVE_API).replace(/\/+$/, "");
   const response = await fetch(`${baseUrl}${path}`, options);
@@ -106,6 +79,10 @@ async function talyFetch(path, options = {}) {
 }
 
 async function getAccessToken() {
+  if (cachedAccessToken && Date.now() < cachedAccessTokenExpiresAt) {
+    return cachedAccessToken;
+  }
+
   const merchantKey = cleanSecret(process.env.TALY_MERCHANT_KEY);
   const secretKey = cleanSecret(process.env.TALY_SECRET_KEY);
   if (!merchantKey || !secretKey) {
@@ -130,6 +107,9 @@ async function getAccessToken() {
 
   const token = pickDeep(authData, ["access_token", "accessToken", "token"]);
   if (!token) throw new Error("Taly did not return an access token.");
+  const expiresInSeconds = Number(pickDeep(authData, ["expires_in", "expiresIn"])) || 900;
+  cachedAccessToken = String(token);
+  cachedAccessTokenExpiresAt = Date.now() + Math.max(60, expiresInSeconds - 60) * 1000;
   return token;
 }
 
@@ -201,7 +181,7 @@ module.exports = async function handler(req, res) {
       taxAmount: 0,
       deliveryAmount: 0,
       deliveryMethod: "home delivery",
-      otherFees: 0,
+      otherFee: 0,
       merchantRedirectUrl: `${origin}/order-success?order=${encodeURIComponent(body.orderNumber)}&payment=taly`,
       postBackUrl: `${origin}/wc-api/wc_taly`,
       merchantLogo: `${origin}/assets/images/autoobenz-logo.png`,
@@ -238,34 +218,9 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify(payload),
     });
 
-    const paymentUrl = String(pickDeep(talyData, [
-      "checkoutUrl",
-      "checkout_url",
-      "checkoutLink",
-      "checkout_link",
-      "checkoutPageUrl",
-      "checkout_page_url",
-      "paymentUrl",
-      "payment_url",
-      "paymentLink",
-      "payment_link",
-      "paymentPageUrl",
-      "payment_page_url",
-      "paymentGatewayUrl",
-      "payment_gateway_url",
-      "hostedPaymentUrl",
-      "hosted_payment_url",
-      "redirectUrl",
-      "redirect_url",
-      "redirectLink",
-      "redirect_link",
-      "redirect",
-      "href",
-      "link",
-      "url",
-    ])) || findUrlDeep(talyData);
-    const talyOrderId = String(pickDeep(talyData, ["talyOrderId", "taly_order_id", "orderId", "order_id", "id"]));
-    const orderReference = String(pickDeep(talyData, ["orderReference", "order_reference", "reference"]));
+    const paymentUrl = String(pickDeep(talyData, ["checkout_url", "checkoutUrl"]));
+    const talyOrderId = String(pickDeep(talyData, ["OrderID", "orderID", "orderId", "order_id", "id"]));
+    const orderReference = String(pickDeep(talyData, ["orderToken", "order_token", "orderReference", "order_reference", "reference"]));
 
     if (!paymentUrl) {
       const error = new Error("Taly did not return a payment link.");
