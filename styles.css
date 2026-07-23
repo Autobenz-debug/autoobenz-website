@@ -1169,7 +1169,19 @@ html.app-booting .site-footer { visibility: hidden; }
 
 @media (max-width: 620px) {
   .container { width: min(100% - 24px, 1180px); }
-  .currency-control select { width: 132px; padding-inline: 8px; font-size: 13px; }
+  .currency-control select {
+    width: 132px;
+    padding: 0 18px;
+    font-size: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    background:
+      linear-gradient(45deg, transparent 50%, currentColor 50%) left 13px center / 6px 6px no-repeat,
+      linear-gradient(135deg, currentColor 50%, transparent 50%) left 9px center / 6px 6px no-repeat,
+      var(--surface);
+    text-align: center;
+    text-align-last: center;
+  }
   .cart-button span { display: none; }
   .hero { min-height: 560px; }
   .hero-copy { text-align: right; }
