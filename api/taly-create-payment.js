@@ -27,6 +27,21 @@ function amount(value) {
   return Number(Number(value || 0).toFixed(3));
 }
 
+function splitName(name) {
+  const parts = String(name || "Autoobenz Customer").trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: (parts.shift() || "Autoobenz").slice(0, 60),
+    lastName: (parts.join(" ") || "Customer").slice(0, 60),
+  };
+}
+
+function splitPhone(phone) {
+  const cleaned = String(phone || "").replace(/[^\d+]/g, "");
+  const match = cleaned.match(/^(\+\d{1,3})(\d+)$/);
+  if (match) return { countryCode: match[1], phoneNumber: match[2] };
+  return { countryCode: "+965", phoneNumber: cleaned.replace(/\D/g, "") };
+}
+
 function pickDeep(obj, names) {
   if (!obj || typeof obj !== "object") return "";
   for (const name of names) {
@@ -113,12 +128,21 @@ function buildOrderItems(items) {
     const total = amount(item.amount || 0);
     const unitPrice = amount(quantity ? total / quantity : total);
     return {
-      itemId: String(index + 1),
+      sku: `AUTOOBENZ-${index + 1}`,
+      type: "physical",
       name: String(item.name || `Item ${index + 1}`).slice(0, 120),
-      description: String(item.name || `Item ${index + 1}`).slice(0, 250),
+      itemDescription: String(item.name || `Item ${index + 1}`).slice(0, 250),
       quantity,
-      unitPrice,
-      totalAmount: total,
+      itemPrice: unitPrice,
+      imageUrl: "",
+      itemUrl: "",
+      itemUnit: "pc",
+      itemSize: "",
+      itemColor: "",
+      itemGender: "",
+      itemBrand: "Autoobenz",
+      itemCategory: "Car accessories",
+      currency: "KWD",
     };
   });
 }
@@ -135,9 +159,12 @@ module.exports = async function handler(req, res) {
 
     const origin = requestOrigin(req);
     const accessToken = await getAccessToken();
+    const { firstName, lastName } = splitName(body.customerName);
+    const { countryCode, phoneNumber } = splitPhone(body.customerPhone);
     const payload = {
       merchantOrderId: String(body.orderNumber),
-      language: "ar",
+      language: "AR",
+      merchantBranch: "Autoobenz",
       subTotal: total,
       totalAmount: total,
       currency: "KWD",
@@ -145,20 +172,29 @@ module.exports = async function handler(req, res) {
       taxAmount: 0,
       deliveryAmount: 0,
       deliveryMethod: "home delivery",
-      otherFee: 0,
+      otherFees: 0,
       merchantRedirectUrl: `${origin}/order-success?order=${encodeURIComponent(body.orderNumber)}&payment=taly`,
       postBackUrl: `${origin}/wc-api/wc_taly`,
       merchantLogo: `${origin}/assets/images/autoobenz-logo.png`,
       platform: "website",
+      isDigitalOrder: false,
       customerDetails: {
-        name: String(body.customerName || "Autoobenz Customer").slice(0, 120),
-        email: String(body.customerEmail || "").slice(0, 120),
-        phoneNumber: String(body.customerPhone || "").replace(/\s+/g, ""),
+        firstName,
+        lastName,
+        gender: "Male",
+        countryCode,
+        phoneNumber,
+        customerEmail: String(body.customerEmail || "").slice(0, 120),
+        registeredSince: new Date().toISOString().slice(0, 10),
+        loyaltyMember: false,
+        loyaltyLevel: "Standard",
       },
       deliveryAddress: {
-        country: String(body.customerCountry || "Kuwait"),
         city: String(body.customerCity || "Kuwait City"),
-        address: String(body.customerAddress || "Kuwait"),
+        area: String(body.customerCountry || "Kuwait"),
+        fullAddress: String(body.customerAddress || "Kuwait"),
+        phoneNumber,
+        customerEmail: String(body.customerEmail || "").slice(0, 120),
       },
       orderItems: buildOrderItems(body.items),
     };
@@ -204,6 +240,7 @@ module.exports = async function handler(req, res) {
     return json(res, 500, {
       ok: false,
       error: error.message || "تعذر إنشاء رابط دفع تالي.",
+      details: error.data || null,
     });
   }
 };

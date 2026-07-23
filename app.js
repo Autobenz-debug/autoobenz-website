@@ -1662,7 +1662,8 @@ async function submitCheckout(event) {
       });
       const talyData = await talyResponse.json();
       if (!talyResponse.ok || !talyData?.paymentUrl) {
-        throw new Error(talyData?.error || "تعذر إنشاء رابط دفع تالي.");
+        const details = talyData?.details ? ` - ${JSON.stringify(talyData.details)}` : "";
+        throw new Error(`${talyData?.error || "تعذر إنشاء رابط دفع تالي."}${details}`);
       }
       state.cart = [];
       saveCart();
