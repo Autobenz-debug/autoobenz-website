@@ -56,6 +56,35 @@ function pickDeep(obj, names) {
   return "";
 }
 
+function findUrlDeep(value) {
+  if (!value) return "";
+  if (typeof value === "string") {
+    const match = value.match(/https?:\/\/[^\s"'<>]+/i);
+    return match ? match[0] : "";
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const nested = findUrlDeep(item);
+      if (nested) return nested;
+    }
+    return "";
+  }
+  if (typeof value === "object") {
+    for (const [key, nestedValue] of Object.entries(value)) {
+      const keyLooksLikeLink = /url|link|redirect|checkout|payment|href/i.test(key);
+      if (keyLooksLikeLink && typeof nestedValue === "string") {
+        const nestedUrl = findUrlDeep(nestedValue);
+        if (nestedUrl) return nestedUrl;
+      }
+    }
+    for (const nestedValue of Object.values(value)) {
+      const nestedUrl = findUrlDeep(nestedValue);
+      if (nestedUrl) return nestedUrl;
+    }
+  }
+  return "";
+}
+
 async function talyFetch(path, options = {}) {
   const baseUrl = String(process.env.TALY_API_BASE_URL || TALY_LIVE_API).replace(/\/+$/, "");
   const response = await fetch(`${baseUrl}${path}`, options);
@@ -212,18 +241,37 @@ module.exports = async function handler(req, res) {
     const paymentUrl = String(pickDeep(talyData, [
       "checkoutUrl",
       "checkout_url",
+      "checkoutLink",
+      "checkout_link",
+      "checkoutPageUrl",
+      "checkout_page_url",
       "paymentUrl",
       "payment_url",
+      "paymentLink",
+      "payment_link",
+      "paymentPageUrl",
+      "payment_page_url",
+      "paymentGatewayUrl",
+      "payment_gateway_url",
+      "hostedPaymentUrl",
+      "hosted_payment_url",
       "redirectUrl",
       "redirect_url",
       "redirectLink",
       "redirect_link",
+      "redirect",
+      "href",
+      "link",
       "url",
-    ]));
+    ])) || findUrlDeep(talyData);
     const talyOrderId = String(pickDeep(talyData, ["talyOrderId", "taly_order_id", "orderId", "order_id", "id"]));
     const orderReference = String(pickDeep(talyData, ["orderReference", "order_reference", "reference"]));
 
-    if (!paymentUrl) throw new Error("Taly did not return a payment link.");
+    if (!paymentUrl) {
+      const error = new Error("Taly did not return a payment link.");
+      error.data = talyData;
+      throw error;
+    }
 
     await supabasePatchOrder(body.orderId, {
       payment_method: "taly",
