@@ -1618,6 +1618,9 @@ async function submitCheckout(event) {
           customerName: formData.get("customer_name"),
           customerPhone: formData.get("customer_phone"),
           customerEmail: formData.get("customer_email"),
+          customerCountry: formData.get("shipping_country"),
+          customerCity: formData.get("shipping_city"),
+          customerAddress: formData.get("shipping_address"),
           items: lines.map(({ product, qty, lineTotal }) => ({
             name: product.name,
             quantity: qty,
@@ -1632,6 +1635,38 @@ async function submitCheckout(event) {
       state.cart = [];
       saveCart();
       window.location.href = deemaData.paymentUrl;
+      return;
+    }
+
+    if (paymentMethod === "taly") {
+      message.textContent = "جاري تحويلك إلى صفحة دفع تالي...";
+      const talyResponse = await fetch("/api/taly-create-payment", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orderId: order.id,
+          orderNumber,
+          amount: totalKwd,
+          customerName: formData.get("customer_name"),
+          customerPhone: formData.get("customer_phone"),
+          customerEmail: customerEmail,
+          customerCountry: formData.get("shipping_country"),
+          customerCity: formData.get("shipping_city"),
+          customerAddress: formData.get("shipping_address"),
+          items: lines.map(({ product, qty, lineTotal }) => ({
+            name: product.name,
+            quantity: qty,
+            amount: lineTotal,
+          })),
+        }),
+      });
+      const talyData = await talyResponse.json();
+      if (!talyResponse.ok || !talyData?.paymentUrl) {
+        throw new Error(talyData?.error || "تعذر إنشاء رابط دفع تالي.");
+      }
+      state.cart = [];
+      saveCart();
+      window.location.href = talyData.paymentUrl;
       return;
     }
 

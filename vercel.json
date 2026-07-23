@@ -5,6 +5,10 @@
       "destination": "/api/deema-webhook"
     },
     {
+      "source": "/wc-api/wc_taly",
+      "destination": "/api/taly-webhook"
+    },
+    {
       "source": "/((?!api/|assets/|styles.css|app.js|admin.html|admin.css|admin.js|supabase-config.js|server.js|package.json|README.md).*)",
       "destination": "/index.html"
     }
