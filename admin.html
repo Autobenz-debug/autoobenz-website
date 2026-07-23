@@ -40,6 +40,7 @@
             <button class="nav-item active" type="button" data-panel="productsPanel">المنتجات</button>
             <button class="nav-item" type="button" data-panel="ordersPanel">الطلبات</button>
             <button class="nav-item" type="button" data-panel="customersPanel">العملاء</button>
+            <button class="nav-item" type="button" data-panel="couponsPanel">كوبونات الخصم</button>
             <a class="nav-item" href="/" target="_blank" rel="noreferrer">فتح الموقع</a>
           </nav>
           <button class="logout-button" id="logoutButton" type="button">تسجيل خروج</button>
@@ -148,6 +149,59 @@
                   </tr>
                 </thead>
                 <tbody id="customersTable"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel hidden" id="couponsPanel">
+            <div class="panel-head">
+              <div>
+                <h2>كوبونات الخصم</h2>
+                <p>إنشاء قسائم ثابتة للسلة أو لمنتج محدد.</p>
+              </div>
+            </div>
+            <form class="coupon-form" id="couponForm">
+              <label>
+                كود الخصم
+                <div class="coupon-code-row">
+                  <input id="couponCodeAdmin" required dir="ltr" maxlength="6" placeholder="KW1234" />
+                  <button class="small-button" id="generateCouponButton" type="button">توليد</button>
+                </div>
+              </label>
+              <label>
+                قيمة الخصم د.ك
+                <input id="couponDiscount" type="number" min="0.001" step="0.001" required />
+              </label>
+              <label>
+                نطاق الخصم
+                <select id="couponScope">
+                  <option value="cart">خصم للسلة</option>
+                  <option value="product">خصم لمنتج محدد</option>
+                </select>
+              </label>
+              <label>
+                المنتج
+                <select id="couponProduct" disabled></select>
+              </label>
+              <label class="check-inline">
+                <input id="couponActive" type="checkbox" checked />
+                فعال
+              </label>
+              <button class="primary-action" type="submit">حفظ الكوبون</button>
+              <p class="form-message" id="couponMessageAdmin"></p>
+            </form>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الكود</th>
+                    <th>الخصم</th>
+                    <th>النطاق</th>
+                    <th>الحالة</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="couponsTable"></tbody>
               </table>
             </div>
           </section>

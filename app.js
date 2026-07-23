@@ -960,6 +960,33 @@ const cartLines = () => state.cart.map((item) => {
 
 const cartSubtotal = () => cartLines().reduce((sum, item) => sum + item.lineTotal, 0);
 
+const normalizeCouponCode = (value = "") => String(value).trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+const eligibleCouponTotal = (coupon, lines) => {
+  if (!coupon || coupon.scope === "cart") return cartSubtotal();
+  return lines.reduce((sum, { product, lineTotal }) => {
+    const matchesDbId = coupon.product_id && product.db_id && String(coupon.product_id) === String(product.db_id);
+    const matchesOldId = coupon.product_old_id && String(coupon.product_old_id) === String(product.id);
+    return sum + (matchesDbId || matchesOldId ? lineTotal : 0);
+  }, 0);
+};
+
+async function validateCouponCode(rawCode, lines = cartLines(), subtotal = cartSubtotal()) {
+  const code = normalizeCouponCode(rawCode);
+  if (!code) throw new Error("اكتب كود الخصم أولاً.");
+  const coupons = await supabaseFetch(`coupons?select=*&code=eq.${encodeURIComponent(code)}&is_active=eq.true&limit=1`);
+  const coupon = coupons?.[0];
+  if (!coupon) throw new Error("كود الخصم غير صحيح أو غير مفعل.");
+  const now = Date.now();
+  if (coupon.starts_at && new Date(coupon.starts_at).getTime() > now) throw new Error("كود الخصم لم يبدأ بعد.");
+  if (coupon.ends_at && new Date(coupon.ends_at).getTime() < now) throw new Error("انتهت صلاحية كود الخصم.");
+  const eligibleTotal = eligibleCouponTotal(coupon, lines);
+  if (coupon.scope === "product" && eligibleTotal <= 0) throw new Error("هذا الكود مخصص لمنتج غير موجود في السلة.");
+  const discount = Math.min(Number(coupon.discount_kwd || 0), eligibleTotal, subtotal);
+  if (discount <= 0) throw new Error("لا يمكن تطبيق هذا الكود على السلة الحالية.");
+  return { coupon, discount };
+}
+
 const shippingLocations = {
   "الكويت": [
     "مدينة الكويت",
@@ -1397,6 +1424,8 @@ function renderCheckout() {
                 </span>
               </label>
             </div>
+            <input type="hidden" name="coupon_code" id="appliedCouponCode" value="">
+            <input type="hidden" name="discount_kwd" id="appliedCouponDiscount" value="0">
             <button class="primary-button span-2" type="submit">تأكيد الطلب</button>
             <p class="checkout-message span-2" id="checkoutMessage"></p>
           </form>
@@ -1414,7 +1443,17 @@ function renderCheckout() {
                 </div>
               `).join("")}
             </div>
-            <div class="summary-total"><span>الإجمالي</span><b>${money(subtotal)}</b></div>
+            <div class="coupon-box">
+              <label for="couponCode">كود الخصم</label>
+              <div>
+                <input id="couponCode" inputmode="text" autocomplete="off" placeholder="مثال: KW1234" dir="ltr">
+                <button id="applyCouponButton" type="button">تطبيق</button>
+              </div>
+              <p id="couponMessage"></p>
+            </div>
+            <div class="summary-row"><span>المجموع</span><b>${money(subtotal)}</b></div>
+            <div class="summary-row discount hidden" id="couponDiscountLine"><span>الخصم</span><b id="couponDiscountAmount">-${money(0)}</b></div>
+            <div class="summary-total"><span>الإجمالي</span><b id="checkoutTotalAmount">${money(subtotal)}</b></div>
           </aside>
         </div>
       </div>
@@ -1435,6 +1474,33 @@ function renderCheckout() {
     document.querySelector("#shippingCity").innerHTML = cityOptions(event.target.value);
     syncPhoneDialCode(event.target.value, previousCountry);
     event.currentTarget.dataset.previousCountry = event.target.value;
+  });
+  document.querySelector("#applyCouponButton").addEventListener("click", async () => {
+    const codeInput = document.querySelector("#couponCode");
+    const button = document.querySelector("#applyCouponButton");
+    const couponMessage = document.querySelector("#couponMessage");
+    button.disabled = true;
+    couponMessage.className = "";
+    couponMessage.textContent = "جاري التحقق من الكود...";
+    try {
+      const result = await validateCouponCode(codeInput.value, lines, subtotal);
+      document.querySelector("#appliedCouponCode").value = normalizeCouponCode(result.coupon.code);
+      document.querySelector("#appliedCouponDiscount").value = result.discount;
+      document.querySelector("#couponDiscountLine").classList.remove("hidden");
+      document.querySelector("#couponDiscountAmount").textContent = `-${money(result.discount)}`;
+      document.querySelector("#checkoutTotalAmount").textContent = money(Math.max(subtotal - result.discount, 0));
+      couponMessage.classList.add("success");
+      couponMessage.textContent = `تم تطبيق كود ${normalizeCouponCode(result.coupon.code)}.`;
+    } catch (error) {
+      document.querySelector("#appliedCouponCode").value = "";
+      document.querySelector("#appliedCouponDiscount").value = "0";
+      document.querySelector("#couponDiscountLine").classList.add("hidden");
+      document.querySelector("#checkoutTotalAmount").textContent = money(subtotal);
+      couponMessage.classList.add("error");
+      couponMessage.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
   });
   document.querySelector("#checkoutForm").addEventListener("submit", submitCheckout);
 }
@@ -1459,9 +1525,19 @@ async function submitCheckout(event) {
   }
   const paymentMethod = formData.get("payment_method") || "sadadpay";
   const subtotal = cartSubtotal();
+  const couponCode = normalizeCouponCode(formData.get("coupon_code"));
+  let appliedCoupon = null;
+  let discountKwd = 0;
+  let totalKwd = subtotal;
   const orderNumber = `AB-${Date.now().toString().slice(-8)}`;
   const customerEmail = formData.get("customer_email") || state.customerSession?.user?.email || "";
   try {
+    if (couponCode) {
+      const couponResult = await validateCouponCode(couponCode, lines, subtotal);
+      appliedCoupon = couponResult.coupon;
+      discountKwd = couponResult.discount;
+      totalKwd = Math.max(subtotal - discountKwd, 0);
+    }
     if (state.customerSession?.user?.id) {
       await saveCustomerProfile({
         full_name: formData.get("customer_name"),
@@ -1484,7 +1560,9 @@ async function submitCheckout(event) {
       notes: formData.get("notes"),
       subtotal_kwd: subtotal,
       shipping_kwd: 0,
-      total_kwd: subtotal,
+      discount_kwd: discountKwd,
+      coupon_code: appliedCoupon ? normalizeCouponCode(appliedCoupon.code) : null,
+      total_kwd: totalKwd,
       status: "new",
       payment_status: "pending",
       payment_method: paymentMethod,
@@ -1521,7 +1599,7 @@ async function submitCheckout(event) {
         total_kwd: lineTotal,
       }))),
     });
-    if (paymentMethod !== "sadadpay") {
+    if (paymentMethod !== "sadadpay" || totalKwd <= 0) {
       state.cart = [];
       saveCart();
       navigate(`/order-success?order=${encodeURIComponent(orderNumber)}&payment=${encodeURIComponent(paymentMethod)}`);
@@ -1535,7 +1613,7 @@ async function submitCheckout(event) {
       body: JSON.stringify({
         orderId: order.id,
         orderNumber,
-        amount: subtotal,
+        amount: totalKwd,
         customerName: formData.get("customer_name"),
         customerPhone: formData.get("customer_phone"),
         customerEmail: formData.get("customer_email"),

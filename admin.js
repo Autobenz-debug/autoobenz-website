@@ -7,6 +7,7 @@ const adminState = {
   products: [],
   orders: [],
   customers: [],
+  coupons: [],
   brands: [],
   categories: [],
   types: [],
@@ -22,6 +23,11 @@ const escapeHtml = (value = "") => String(value)
   .replaceAll('"', "&quot;");
 
 const money = (value) => `${Number(value || 0).toLocaleString("en-US", { maximumFractionDigits: 3 })} د.ك`;
+
+const normalizeCouponCode = (value = "") => String(value)
+  .trim()
+  .toUpperCase()
+  .replace(/[^A-Z0-9]/g, "");
 
 const showMessage = (element, message, type = "") => {
   element.textContent = message || "";
@@ -120,17 +126,19 @@ function showLogin() {
 
 async function loadData() {
   const select = "*,brands(id,slug,name_ar,name_en),categories(id,slug,name_ar,name_en),product_types(id,slug,name_ar,name_en),product_images(id,image_url,sort_order)";
-  const [products, brands, categories, types, orders, customers] = await Promise.all([
+  const [products, brands, categories, types, orders, customers, coupons] = await Promise.all([
     supabaseRest(`products?select=${select}&order=created_at.desc`),
     supabaseRest("brands?select=*&order=sort_order.asc"),
     supabaseRest("categories?select=*&order=sort_order.asc"),
     supabaseRest("product_types?select=*&order=sort_order.asc"),
     loadOrders(),
     loadCustomers(),
+    loadCoupons(),
   ]);
   adminState.products = products || [];
   adminState.orders = orders || [];
   adminState.customers = customers || [];
+  adminState.coupons = coupons || [];
   adminState.brands = brands || [];
   adminState.categories = categories || [];
   adminState.types = types || [];
@@ -155,6 +163,15 @@ async function loadCustomers() {
   }
 }
 
+async function loadCoupons() {
+  try {
+    return await supabaseRest("coupons?select=*,products(title_ar,title_en,slug)&order=created_at.desc");
+  } catch (error) {
+    console.warn("Coupons table is not ready yet.", error);
+    return [];
+  }
+}
+
 function productImage(product) {
   const images = [...(product.product_images || [])].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
   return images[0]?.image_url || "/assets/images/autoobenz-logo.png";
@@ -172,6 +189,7 @@ function renderStats() {
     ["الأكثر طلباً", featured],
     ["طلبات جديدة", adminState.orders.filter((order) => order.status === "new").length],
     ["العملاء", customerRows().length],
+    ["كوبونات فعالة", adminState.coupons.filter((coupon) => coupon.is_active).length],
   ].map(([label, value]) => `<div class="stat-card"><span>${label}</span><b>${value}</b></div>`).join("");
 }
 
@@ -251,7 +269,10 @@ function renderOrders() {
       </td>
       <td>${escapeHtml(order.customer_name || "-")}</td>
       <td dir="ltr">${escapeHtml(order.customer_phone || "-")}</td>
-      <td>${money(order.total_kwd)}</td>
+      <td>
+        ${money(order.total_kwd)}
+        ${Number(order.discount_kwd || 0) > 0 ? `<small>خصم ${escapeHtml(order.coupon_code || "")}: -${money(order.discount_kwd)}</small>` : ""}
+      </td>
       <td>${escapeHtml(paymentLabels[order.payment_status] || order.payment_status || "-")}</td>
       <td>
         <select class="status-select" data-order-status="${order.id}">
@@ -406,12 +427,110 @@ function renderModelOptions(selectedIds = []) {
   ].join("");
 }
 
+function generateCouponCode() {
+  return `KW${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
+function couponProductLabel(coupon) {
+  if (coupon.scope !== "product") return "السلة كاملة";
+  return coupon.products?.title_ar || coupon.products?.title_en || coupon.products?.slug || coupon.product_old_id || "منتج محدد";
+}
+
+function renderCouponOptions() {
+  const select = $("#couponProduct");
+  if (!select) return;
+  select.innerHTML = `<option value="">اختر المنتج</option>${adminState.products.map((product) => (
+    `<option value="${product.id}">${escapeHtml(product.title_ar || product.title_en || product.slug || product.id)}</option>`
+  )).join("")}`;
+}
+
+function renderCoupons() {
+  const table = $("#couponsTable");
+  if (!table) return;
+  const rows = adminState.coupons.map((coupon) => `
+    <tr>
+      <td><span class="coupon-code">${escapeHtml(coupon.code)}</span></td>
+      <td>${money(coupon.discount_kwd)}</td>
+      <td>${escapeHtml(couponProductLabel(coupon))}</td>
+      <td><span class="status-pill ${coupon.is_active ? "active" : "hidden-status"}">${coupon.is_active ? "فعال" : "متوقف"}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="small-button" type="button" data-coupon-toggle="${coupon.id}" data-coupon-active="${coupon.is_active ? "false" : "true"}">${coupon.is_active ? "تعطيل" : "تفعيل"}</button>
+          <button class="small-button danger-text" type="button" data-coupon-delete="${coupon.id}">حذف</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+  table.innerHTML = rows || `<tr><td colspan="5"><div class="empty-panel"><b>لا توجد كوبونات</b><span>اضغط توليد ثم احفظ أول كوبون خصم.</span></div></td></tr>`;
+}
+
+function resetCouponForm() {
+  $("#couponCodeAdmin").value = generateCouponCode();
+  $("#couponDiscount").value = "";
+  $("#couponScope").value = "cart";
+  $("#couponProduct").value = "";
+  $("#couponProduct").disabled = true;
+  $("#couponActive").checked = true;
+}
+
+async function saveCoupon(event) {
+  event.preventDefault();
+  const message = $("#couponMessageAdmin");
+  showMessage(message, "جاري حفظ الكوبون...");
+  try {
+    const scope = $("#couponScope").value;
+    const productId = scope === "product" ? $("#couponProduct").value : "";
+    const product = adminState.products.find((item) => String(item.id) === String(productId));
+    const payload = {
+      code: normalizeCouponCode($("#couponCodeAdmin").value),
+      discount_kwd: Number($("#couponDiscount").value || 0),
+      scope,
+      product_id: scope === "product" ? product?.id : null,
+      product_old_id: scope === "product" && product?.old_id ? String(product.old_id) : null,
+      is_active: $("#couponActive").checked,
+    };
+    if (!/^KW\d{4}$/.test(payload.code)) throw new Error("الكود لازم يكون مثل KW1234.");
+    if (payload.discount_kwd <= 0) throw new Error("اكتب قيمة خصم صحيحة.");
+    if (scope === "product" && !product?.id) throw new Error("اختر المنتج المرتبط بالكوبون.");
+    await supabaseRest("coupons", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify(payload),
+    });
+    showMessage(message, "تم حفظ الكوبون.", "success");
+    resetCouponForm();
+    await loadData();
+  } catch (error) {
+    showMessage(message, error.message, "error");
+  }
+}
+
+async function setCouponActive(id, isActive) {
+  await supabaseRest(`coupons?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ is_active: isActive }),
+  });
+  await loadData();
+}
+
+async function deleteCoupon(id) {
+  if (!confirm("حذف الكوبون؟")) return;
+  await supabaseRest(`coupons?id=eq.${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { Prefer: "return=minimal" },
+  });
+  await loadData();
+}
+
 function renderEverything() {
   renderStats();
   renderOptions();
+  renderCouponOptions();
   renderProducts();
   renderOrders();
   renderCustomers();
+  renderCoupons();
 }
 
 function openOrderModal(order) {
@@ -424,6 +543,12 @@ function openOrderModal(order) {
       <div><span>البريد</span><b>${escapeHtml(order.customer_email || "-")}</b></div>
       <div><span>الإجمالي</span><b>${money(order.total_kwd)}</b></div>
     </div>
+    ${Number(order.discount_kwd || 0) > 0 ? `
+      <div class="order-address">
+        <span>كود الخصم</span>
+        <p>${escapeHtml(order.coupon_code || "-")} - خصم ${money(order.discount_kwd)}</p>
+      </div>
+    ` : ""}
     <div class="order-address">
       <span>العنوان</span>
       <p>${escapeHtml([order.shipping_country, order.shipping_city, order.shipping_address].filter(Boolean).join(" - "))}</p>
@@ -641,7 +766,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       $$(".nav-item[data-panel]").forEach((entry) => entry.classList.remove("active"));
       button.classList.add("active");
-      ["productsPanel", "ordersPanel", "customersPanel"].forEach((id) => $(`#${id}`).classList.toggle("hidden", id !== button.dataset.panel));
+      ["productsPanel", "ordersPanel", "customersPanel", "couponsPanel"].forEach((id) => $(`#${id}`).classList.toggle("hidden", id !== button.dataset.panel));
     });
   });
 
@@ -650,6 +775,13 @@ function bindEvents() {
   $("#orderSearch").addEventListener("input", renderOrders);
   $("#orderStatusFilter").addEventListener("change", renderOrders);
   $("#customerSearch")?.addEventListener("input", renderCustomers);
+  $("#couponForm")?.addEventListener("submit", saveCoupon);
+  $("#generateCouponButton")?.addEventListener("click", () => {
+    $("#couponCodeAdmin").value = generateCouponCode();
+  });
+  $("#couponScope")?.addEventListener("change", () => {
+    $("#couponProduct").disabled = $("#couponScope").value !== "product";
+  });
   $("#newProductButton").addEventListener("click", () => openProductModal());
   $("#closeModalButton").addEventListener("click", closeProductModal);
   $("#productModal").addEventListener("click", (event) => {
@@ -698,6 +830,25 @@ function bindEvents() {
       select.disabled = false;
     }
   });
+  $("#couponsTable")?.addEventListener("click", async (event) => {
+    const toggle = event.target.closest("[data-coupon-toggle]");
+    const remove = event.target.closest("[data-coupon-delete]");
+    try {
+      if (toggle) {
+        toggle.disabled = true;
+        await setCouponActive(toggle.dataset.couponToggle, toggle.dataset.couponActive === "true");
+      }
+      if (remove) {
+        remove.disabled = true;
+        await deleteCoupon(remove.dataset.couponDelete);
+      }
+    } catch (error) {
+      alert(error.message);
+      if (toggle) toggle.disabled = false;
+      if (remove) remove.disabled = false;
+    }
+  });
+  resetCouponForm();
 }
 
 async function boot() {
