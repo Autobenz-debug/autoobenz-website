@@ -50,6 +50,14 @@ module.exports = async function handler(req, res) {
     return json(res, 405, { ok: false, error: "Method not allowed" });
   }
 
+  const webhookSecret = cleanSecret(process.env.DEEMA_WEBHOOK_SECRET);
+  if (webhookSecret) {
+    const sentSecret = cleanSecret(req.headers["x-deema-webhook-key"]);
+    if (sentSecret !== webhookSecret) {
+      return json(res, 401, { ok: false, error: "Invalid webhook key" });
+    }
+  }
+
   const body = req.method === "POST" ? await readBody(req) : {};
   const query = req.query || {};
   const event = body?.data || body?.response || body || query;
