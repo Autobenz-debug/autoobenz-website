@@ -209,7 +209,7 @@ function filteredProducts() {
 function renderProducts() {
   const rows = filteredProducts().map((product) => `
     <tr>
-      <td>
+      <td data-label="المنتج">
         <div class="product-cell">
           <img src="${productImage(product)}" alt="">
           <div>
@@ -218,12 +218,12 @@ function renderProducts() {
           </div>
         </div>
       </td>
-      <td>${escapeHtml(product.brands?.name_ar || "-")}</td>
-      <td>${escapeHtml(product.product_types?.name_ar || product.categories?.name_ar || "-")}</td>
-      <td>${money(product.price_kwd)}</td>
-      <td>${Number(product.stock_quantity || 0)}</td>
-      <td><span class="status-pill ${product.is_active ? "active" : "hidden-status"}">${product.is_active ? "ظاهر" : "مخفي"}</span></td>
-      <td>
+      <td data-label="الماركة">${escapeHtml(product.brands?.name_ar || "-")}</td>
+      <td data-label="القسم">${escapeHtml(product.product_types?.name_ar || product.categories?.name_ar || "-")}</td>
+      <td data-label="السعر">${money(product.price_kwd)}</td>
+      <td data-label="المخزون">${Number(product.stock_quantity || 0)}</td>
+      <td data-label="الحالة"><span class="status-pill ${product.is_active ? "active" : "hidden-status"}">${product.is_active ? "ظاهر" : "مخفي"}</span></td>
+      <td data-label="الإجراء">
         <div class="row-actions">
           <button class="small-button" type="button" data-edit="${product.id}">تعديل</button>
           <a class="small-button" href="/product/${encodeURIComponent(product.slug)}" target="_blank" rel="noreferrer">عرض</a>
@@ -263,23 +263,23 @@ function renderOrders() {
   if (!table) return;
   const rows = filteredOrders().map((order) => `
     <tr>
-      <td>
+      <td data-label="الطلب">
         <b dir="ltr">${escapeHtml(order.order_number || order.id)}</b>
         <small>${new Date(order.created_at).toLocaleString("ar-KW")}</small>
       </td>
-      <td>${escapeHtml(order.customer_name || "-")}</td>
-      <td dir="ltr">${escapeHtml(order.customer_phone || "-")}</td>
-      <td>
+      <td data-label="العميل">${escapeHtml(order.customer_name || "-")}</td>
+      <td data-label="الهاتف" dir="ltr">${escapeHtml(order.customer_phone || "-")}</td>
+      <td data-label="الإجمالي">
         ${money(order.total_kwd)}
         ${Number(order.discount_kwd || 0) > 0 ? `<small>خصم ${escapeHtml(order.coupon_code || "")}: -${money(order.discount_kwd)}</small>` : ""}
       </td>
-      <td>${escapeHtml(paymentLabels[order.payment_status] || order.payment_status || "-")}</td>
-      <td>
+      <td data-label="الدفع">${escapeHtml(paymentLabels[order.payment_status] || order.payment_status || "-")}</td>
+      <td data-label="الحالة">
         <select class="status-select" data-order-status="${order.id}">
           ${Object.entries(statusLabels).map(([value, label]) => `<option value="${value}" ${order.status === value ? "selected" : ""}>${label}</option>`).join("")}
         </select>
       </td>
-      <td>
+      <td data-label="الإجراء">
         <div class="row-actions">
           <button class="small-button" type="button" data-order="${order.id}">تفاصيل</button>
           <a class="small-button" href="https://wa.me/${String(order.customer_phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`مرحباً، بخصوص طلبك ${order.order_number || ""} من أوتوبنز`)}" target="_blank" rel="noreferrer">واتساب</a>
@@ -350,17 +350,17 @@ function renderCustomers() {
     const lastOrder = orders[0];
     return `
       <tr>
-        <td>
+        <td data-label="العميل">
           <div class="customer-cell">
             <b>${escapeHtml(customer.full_name || "-")}</b>
             <small>${escapeHtml(customer.email || "-")}</small>
           </div>
         </td>
-        <td dir="ltr">${escapeHtml(customer.phone || "-")}</td>
-        <td>${orders.length}</td>
-        <td>${money(total)}</td>
-        <td>${lastOrder ? `${escapeHtml(lastOrder.order_number || lastOrder.id)}<small>${new Date(lastOrder.created_at).toLocaleString("ar-KW")}</small>` : "-"}</td>
-        <td>
+        <td data-label="الهاتف" dir="ltr">${escapeHtml(customer.phone || "-")}</td>
+        <td data-label="عدد الطلبات">${orders.length}</td>
+        <td data-label="إجمالي الطلبات">${money(total)}</td>
+        <td data-label="آخر طلب">${lastOrder ? `${escapeHtml(lastOrder.order_number || lastOrder.id)}<small>${new Date(lastOrder.created_at).toLocaleString("ar-KW")}</small>` : "-"}</td>
+        <td data-label="الإجراء">
           ${customer.phone ? `<a class="small-button" href="https://wa.me/${String(customer.phone).replace(/[^0-9]/g, "")}" target="_blank" rel="noreferrer">واتساب</a>` : ""}
         </td>
       </tr>
@@ -449,11 +449,11 @@ function renderCoupons() {
   if (!table) return;
   const rows = adminState.coupons.map((coupon) => `
     <tr>
-      <td><span class="coupon-code">${escapeHtml(coupon.code)}</span></td>
-      <td>${money(coupon.discount_kwd)}</td>
-      <td>${escapeHtml(couponProductLabel(coupon))}</td>
-      <td><span class="status-pill ${coupon.is_active ? "active" : "hidden-status"}">${coupon.is_active ? "فعال" : "متوقف"}</span></td>
-      <td>
+      <td data-label="الكود"><span class="coupon-code">${escapeHtml(coupon.code)}</span></td>
+      <td data-label="الخصم">${money(coupon.discount_kwd)}</td>
+      <td data-label="النطاق">${escapeHtml(couponProductLabel(coupon))}</td>
+      <td data-label="الحالة"><span class="status-pill ${coupon.is_active ? "active" : "hidden-status"}">${coupon.is_active ? "فعال" : "متوقف"}</span></td>
+      <td data-label="الإجراء">
         <div class="row-actions">
           <button class="small-button" type="button" data-coupon-toggle="${coupon.id}" data-coupon-active="${coupon.is_active ? "false" : "true"}">${coupon.is_active ? "تعطيل" : "تفعيل"}</button>
           <button class="small-button danger-text" type="button" data-coupon-delete="${coupon.id}">حذف</button>
