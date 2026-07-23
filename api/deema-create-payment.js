@@ -3,6 +3,7 @@ const DEEMA_LIVE_API = "https://api.deema.me";
 function json(res, statusCode, data) {
   res.statusCode = statusCode;
   res.setHeader("content-type", "application/json; charset=utf-8");
+  res.setHeader("cache-control", "no-store");
   res.end(JSON.stringify(data));
 }
 
@@ -60,6 +61,33 @@ async function supabasePatchOrder(orderId, payload) {
   });
 }
 
+async function supabaseGetOrder(orderId) {
+  const supabaseUrl = String(process.env.SUPABASE_URL || "").trim();
+  const serviceKey = cleanSecret(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY);
+  if (!supabaseUrl || !serviceKey || !orderId) return null;
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,total_kwd&limit=1`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+    },
+  });
+  if (!response.ok) return null;
+  const rows = await response.json();
+  return rows?.[0] || null;
+}
+
+function verifyOrder(order, body, amount) {
+  if (!order) throw new Error("Order not found.");
+  if (String(order.order_number || "") !== String(body.orderNumber || "")) {
+    throw new Error("Order number mismatch.");
+  }
+  const expectedAmount = Number(order.total_kwd || 0);
+  if (!expectedAmount || Math.abs(expectedAmount - amount) > 0.001) {
+    throw new Error("Order amount mismatch.");
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return json(res, 405, { ok: false, error: "Method not allowed" });
@@ -71,6 +99,9 @@ module.exports = async function handler(req, res) {
     const amount = Number(body.amount || 0);
     if (!apiKey) throw new Error("Deema API key is missing in Vercel Environment Variables.");
     if (!body.orderNumber || !amount) throw new Error("Order number and amount are required.");
+
+    const order = await supabaseGetOrder(body.orderId);
+    verifyOrder(order, body, amount);
 
     const origin = requestOrigin(req);
     const payload = {

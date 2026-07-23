@@ -5,6 +5,7 @@ let cachedAccessTokenExpiresAt = 0;
 function json(res, statusCode, data) {
   res.statusCode = statusCode;
   res.setHeader("content-type", "application/json; charset=utf-8");
+  res.setHeader("cache-control", "no-store");
   res.end(JSON.stringify(data));
 }
 
@@ -130,6 +131,33 @@ async function supabasePatchOrder(orderId, payload) {
   });
 }
 
+async function supabaseGetOrder(orderId) {
+  const supabaseUrl = String(process.env.SUPABASE_URL || "").trim();
+  const serviceKey = cleanSecret(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY);
+  if (!supabaseUrl || !serviceKey || !orderId) return null;
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=id,order_number,total_kwd,customer_name,customer_phone,customer_email,shipping_country,shipping_city,shipping_address&limit=1`, {
+    headers: {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+    },
+  });
+  if (!response.ok) return null;
+  const rows = await response.json();
+  return rows?.[0] || null;
+}
+
+function verifyOrder(order, body, total) {
+  if (!order) throw new Error("Order not found.");
+  if (String(order.order_number || "") !== String(body.orderNumber || "")) {
+    throw new Error("Order number mismatch.");
+  }
+  const expectedAmount = Number(order.total_kwd || 0);
+  if (!expectedAmount || Math.abs(expectedAmount - total) > 0.001) {
+    throw new Error("Order amount mismatch.");
+  }
+}
+
 function buildOrderItems(items) {
   const safeItems = Array.isArray(items) && items.length ? items : [{ name: "Autoobenz order", quantity: 1, amount: 0 }];
   return safeItems.map((item, index) => {
@@ -166,10 +194,13 @@ module.exports = async function handler(req, res) {
     const total = amount(body.amount);
     if (!body.orderNumber || !total) throw new Error("Order number and amount are required.");
 
+    const order = await supabaseGetOrder(body.orderId);
+    verifyOrder(order, body, total);
+
     const origin = requestOrigin(req);
     const accessToken = await getAccessToken();
-    const { firstName, lastName } = splitName(body.customerName);
-    const { countryCode, phoneNumber } = splitPhone(body.customerPhone);
+    const { firstName, lastName } = splitName(order.customer_name || body.customerName);
+    const { countryCode, phoneNumber } = splitPhone(order.customer_phone || body.customerPhone);
     const payload = {
       merchantOrderId: String(body.orderNumber),
       language: "AR",
@@ -193,17 +224,17 @@ module.exports = async function handler(req, res) {
         gender: "Male",
         countryCode,
         phoneNumber,
-        customerEmail: String(body.customerEmail || "").slice(0, 120),
+        customerEmail: String(order.customer_email || body.customerEmail || "").slice(0, 120),
         registeredSince: new Date().toISOString().slice(0, 10),
         loyaltyMember: false,
         loyaltyLevel: "Standard",
       },
       deliveryAddress: {
-        city: String(body.customerCity || "Kuwait City"),
-        area: String(body.customerCountry || "Kuwait"),
-        fullAddress: String(body.customerAddress || "Kuwait"),
+        city: String(order.shipping_city || body.customerCity || "Kuwait City"),
+        area: String(order.shipping_country || body.customerCountry || "Kuwait"),
+        fullAddress: String(order.shipping_address || body.customerAddress || "Kuwait"),
         phoneNumber,
-        customerEmail: String(body.customerEmail || "").slice(0, 120),
+        customerEmail: String(order.customer_email || body.customerEmail || "").slice(0, 120),
       },
       orderItems: buildOrderItems(body.items),
     };
@@ -223,9 +254,7 @@ module.exports = async function handler(req, res) {
     const orderReference = String(pickDeep(talyData, ["orderToken", "order_token", "orderReference", "order_reference", "reference"]));
 
     if (!paymentUrl) {
-      const error = new Error("Taly did not return a payment link.");
-      error.data = talyData;
-      throw error;
+      throw new Error("Taly did not return a payment link.");
     }
 
     await supabasePatchOrder(body.orderId, {
@@ -243,7 +272,6 @@ module.exports = async function handler(req, res) {
     return json(res, 500, {
       ok: false,
       error: error.message || "تعذر إنشاء رابط دفع تالي.",
-      details: error.data || null,
     });
   }
 };

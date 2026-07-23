@@ -1,6 +1,7 @@
 function json(res, statusCode, data) {
   res.statusCode = statusCode;
   res.setHeader("content-type", "application/json; charset=utf-8");
+  res.setHeader("cache-control", "no-store");
   res.end(JSON.stringify(data));
 }
 
@@ -23,9 +24,13 @@ function pick(obj, names) {
   return "";
 }
 
+function cleanSecret(value) {
+  return String(value || "").replace(/\s+/g, "");
+}
+
 async function supabaseUpdateByInvoice(invoiceId, payload) {
   const supabaseUrl = String(process.env.SUPABASE_URL || "").trim();
-  const serviceKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "").replace(/\s+/g, "");
+  const serviceKey = cleanSecret(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY);
   if (!supabaseUrl || !serviceKey || !invoiceId) return false;
 
   const response = await fetch(`${supabaseUrl}/rest/v1/orders?sadad_invoice_id=eq.${encodeURIComponent(invoiceId)}`, {
@@ -44,6 +49,14 @@ async function supabaseUpdateByInvoice(invoiceId, payload) {
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return json(res, 405, { ok: false, error: "Method not allowed" });
+  }
+
+  const webhookSecret = cleanSecret(process.env.SADAD_WEBHOOK_SECRET);
+  if (webhookSecret) {
+    const sentSecret = cleanSecret(req.headers["x-sadad-webhook-key"]);
+    if (sentSecret !== webhookSecret) {
+      return json(res, 401, { ok: false, error: "Invalid webhook key" });
+    }
   }
 
   const body = await readBody(req);
