@@ -60,7 +60,7 @@ const money = (value) => {
 
 const currencyOptions = () => currencyOrder.map((code) => {
   const currency = currencyRates[code];
-  return `<option value="${code}" ${state.currency === code ? "selected" : ""}>${currency.label} - ${currency.code}</option>`;
+  return `<option value="${code}" ${state.currency === code ? "selected" : ""}>${currency.label} - \u200e${currency.code}\u200e</option>`;
 }).join("");
 
 function updateCurrencyControls() {
