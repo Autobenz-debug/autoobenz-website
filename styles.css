@@ -1169,7 +1169,7 @@ html.app-booting .site-footer { visibility: hidden; }
 
 @media (max-width: 620px) {
   .container { width: min(100% - 24px, 1180px); }
-  .currency-control select { width: 132px; padding-inline: 8px; font-size: 12px; }
+  .currency-control select { width: 132px; padding-inline: 8px; font-size: 13px; }
   .cart-button span { display: none; }
   .hero { min-height: 560px; }
   .hero-copy { text-align: right; }
