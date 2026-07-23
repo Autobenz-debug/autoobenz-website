@@ -150,9 +150,9 @@ html.app-booting .site-footer { visibility: hidden; }
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink-2);
-  padding: 0 26px 0 10px;
+  padding: 0 12px;
   font-size: 13px;
-  direction: rtl;
+  direction: ltr;
   text-align: center;
   text-align-last: center;
   outline: 0;
@@ -216,9 +216,9 @@ html.app-booting .site-footer { visibility: hidden; }
   border-radius: 8px;
   background: var(--surface-2);
   color: var(--ink);
-  padding: 0 28px 0 12px;
-  font-size: 14px;
-  direction: rtl;
+  padding: 0 10px;
+  font-size: 12px;
+  direction: ltr;
   text-align: center;
   text-align-last: center;
   outline: 0;
@@ -1169,6 +1169,7 @@ html.app-booting .site-footer { visibility: hidden; }
 
 @media (max-width: 620px) {
   .container { width: min(100% - 24px, 1180px); }
+  .currency-control select { width: 154px; font-size: 12px; }
   .cart-button span { display: none; }
   .hero { min-height: 560px; }
   .hero-copy { text-align: right; }
