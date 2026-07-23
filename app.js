@@ -1599,7 +1599,43 @@ async function submitCheckout(event) {
         total_kwd: lineTotal,
       }))),
     });
-    if (paymentMethod !== "sadadpay" || totalKwd <= 0) {
+    if (totalKwd <= 0) {
+      state.cart = [];
+      saveCart();
+      navigate(`/order-success?order=${encodeURIComponent(orderNumber)}&payment=${encodeURIComponent(paymentMethod)}`);
+      return;
+    }
+
+    if (paymentMethod === "deema") {
+      message.textContent = "جاري تحويلك إلى صفحة دفع ديمه...";
+      const deemaResponse = await fetch("/api/deema-create-payment", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orderId: order.id,
+          orderNumber,
+          amount: totalKwd,
+          customerName: formData.get("customer_name"),
+          customerPhone: formData.get("customer_phone"),
+          customerEmail: formData.get("customer_email"),
+          items: lines.map(({ product, qty, lineTotal }) => ({
+            name: product.name,
+            quantity: qty,
+            amount: lineTotal,
+          })),
+        }),
+      });
+      const deemaData = await deemaResponse.json();
+      if (!deemaResponse.ok || !deemaData?.paymentUrl) {
+        throw new Error(deemaData?.error || "تعذر إنشاء رابط دفع ديمه.");
+      }
+      state.cart = [];
+      saveCart();
+      window.location.href = deemaData.paymentUrl;
+      return;
+    }
+
+    if (paymentMethod !== "sadadpay") {
       state.cart = [];
       saveCart();
       navigate(`/order-success?order=${encodeURIComponent(orderNumber)}&payment=${encodeURIComponent(paymentMethod)}`);
