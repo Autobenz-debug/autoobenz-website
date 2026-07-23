@@ -547,12 +547,7 @@ function renderShop() {
   const q = params.get("q") || "";
   const modelOptions = selectedBrand ? brandModels(selectedBrand) : [];
 
-  const filtered = state.products.filter((product) => {
-    return inBrand(product, selectedBrand)
-      && (!selectedModel || product.cat_slugs.includes(selectedModel))
-      && (!selectedType || product.cat_slugs.includes(selectedType))
-      && (!q || product.name.toLowerCase().includes(q.toLowerCase()));
-  });
+  const filtered = filterShopProducts({ selectedBrand, selectedModel, selectedType, q });
 
   app.innerHTML = `
     <section class="shop-layout">
@@ -581,18 +576,74 @@ function renderShop() {
 
   document.querySelector("#filtersForm").addEventListener("change", updateFilters);
   document.querySelector("#filtersForm").addEventListener("input", (event) => {
-    if (event.target.name === "q") updateFilters();
+    if (event.target.name === "q") updateShopSearch();
+  });
+  document.querySelector("#filtersForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    updateFilters();
+  });
+  document.querySelector('#filtersForm input[name="q"]').addEventListener("keydown", (event) => {
+    if (event.key === "Enter") updateFilters();
   });
 }
 
-function updateFilters() {
+function filterShopProducts({ selectedBrand, selectedModel, selectedType, q }) {
+  const query = q.trim().toLowerCase();
+  return state.products.filter((product) => {
+    return inBrand(product, selectedBrand)
+      && (!selectedModel || product.cat_slugs.includes(selectedModel))
+      && (!selectedType || product.cat_slugs.includes(selectedType))
+      && (!query || product.name.toLowerCase().includes(query));
+  });
+}
+
+function currentShopFilters() {
   const form = document.querySelector("#filtersForm");
   const data = new FormData(form);
+  return {
+    selectedBrand: data.get("brand") || "",
+    selectedModel: data.get("model") || "",
+    selectedType: data.get("type") || "",
+    q: data.get("q") || "",
+  };
+}
+
+function shopResultsMarkup(products) {
+  return products.length
+    ? `<div class="product-grid">${products.map(productCard).join("")}</div>`
+    : `<div class="empty-state"><b>ما لقينا نتائج</b><p>جرب تغير الفلتر، أو كلمنا واتساب ونوفر لك القطعة اللي تبيها.</p></div>`;
+}
+
+function currentFilterParams() {
+  const filters = currentShopFilters();
   const params = new URLSearchParams();
-  ["brand", "model", "type", "q"].forEach((key) => {
-    const value = data.get(key);
+  [
+    ["brand", filters.selectedBrand],
+    ["model", filters.selectedModel],
+    ["type", filters.selectedType],
+    ["q", filters.q],
+  ].forEach(([key, value]) => {
     if (value) params.set(key, value);
   });
+  return params;
+}
+
+function updateShopSearch() {
+  const filters = currentShopFilters();
+  const params = currentFilterParams();
+  const filtered = filterShopProducts(filters);
+  const resultsLine = document.querySelector(".results-line");
+  const resultsBlock = resultsLine?.nextElementSibling;
+  history.replaceState(null, "", `/shop${params.toString() ? `?${params}` : ""}`);
+  if (resultsLine) resultsLine.textContent = `${filtered.length} منتج`;
+  if (resultsBlock) {
+    resultsBlock.outerHTML = shopResultsMarkup(filtered);
+    observeReveals();
+  }
+}
+
+function updateFilters() {
+  const params = currentFilterParams();
   history.replaceState(null, "", `/shop${params.toString() ? `?${params}` : ""}`);
   renderShop();
 }
