@@ -144,7 +144,7 @@ html.app-booting .site-footer { visibility: hidden; }
   white-space: nowrap;
 }
 .currency-control select {
-  width: 132px;
+  width: 124px;
   height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
