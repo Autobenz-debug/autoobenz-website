@@ -39,7 +39,7 @@ const currencyRates = {
   QAR: { label: "قطر", code: "QAR", symbol: "ر.ق", rate: 11.85, decimals: 0 },
   BHD: { label: "البحرين", code: "BHD", symbol: "د.ب", rate: 1.22, decimals: 2 },
   OMR: { label: "عمان", code: "OMR", symbol: "ر.ع", rate: 1.25, decimals: 2 },
-  USD: { label: "الدولار الأمريكي", code: "USD", symbol: "$", rate: 3.25, decimals: 0 },
+  USD: { label: "أمريكا", code: "USD", symbol: "$", rate: 3.25, decimals: 0 },
 };
 const currencyOrder = ["KWD", "SAR", "AED", "QAR", "BHD", "OMR", "USD"];
 if (!currencyRates[state.currency]) state.currency = "KWD";

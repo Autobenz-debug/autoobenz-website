@@ -144,14 +144,17 @@ html.app-booting .site-footer { visibility: hidden; }
   white-space: nowrap;
 }
 .currency-control select {
-  width: 116px;
+  width: 132px;
   height: 40px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink-2);
-  padding: 0 10px;
+  padding: 0 26px 0 10px;
   font-size: 13px;
+  direction: rtl;
+  text-align: center;
+  text-align-last: center;
   outline: 0;
   transition: border-color .18s ease, color .18s ease, background .18s ease;
 }
@@ -198,6 +201,7 @@ html.app-booting .site-footer { visibility: hidden; }
   display: block;
   padding: 14px 20px 18px;
   border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  text-align: center;
 }
 .mobile-currency-control span {
   display: block;
@@ -212,8 +216,11 @@ html.app-booting .site-footer { visibility: hidden; }
   border-radius: 8px;
   background: var(--surface-2);
   color: var(--ink);
-  padding: 0 12px;
+  padding: 0 28px 0 12px;
   font-size: 14px;
+  direction: rtl;
+  text-align: center;
+  text-align-last: center;
   outline: 0;
 }
 .mobile-currency-control select:focus { border-color: var(--accent); }
