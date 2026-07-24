@@ -428,7 +428,7 @@ html.app-booting .site-footer { visibility: hidden; }
 }
 :root[data-theme="light"] .hero-lead,
 :root[data-theme="light"] .hero-stats {
-  color: #2F3D4E;
+  color: #243141;
 }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .primary-button, .secondary-button {
