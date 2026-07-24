@@ -720,7 +720,7 @@ html.app-booting .site-footer { visibility: hidden; }
 }
 .brand-card b {
   display: block;
-  color: #F4F5F7;
+  color: #FFFFFF;
   font-size: 17px;
   line-height: 1.35;
   font-weight: 800;
@@ -728,7 +728,7 @@ html.app-booting .site-footer { visibility: hidden; }
 }
 .brand-card:hover b { color: var(--accent-text); }
 :root[data-theme="light"] .brand-card b {
-  color: #243141;
+  color: #151F2A;
 }
 :root[data-theme="light"] .brand-card:hover b {
   color: #A52A34;
