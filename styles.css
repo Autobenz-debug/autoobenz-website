@@ -426,6 +426,10 @@ html.app-booting .site-footer { visibility: hidden; }
   border-radius: 999px;
   background: var(--danger);
 }
+:root[data-theme="light"] .hero-lead,
+:root[data-theme="light"] .hero-stats {
+  color: #2F3D4E;
+}
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 .primary-button, .secondary-button {
   min-height: 46px;
