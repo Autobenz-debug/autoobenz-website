@@ -447,6 +447,21 @@ document.addEventListener("change", (event) => {
   setCurrency(select.value);
 });
 
+const themeToggle = document.querySelector("#themeToggle");
+if (themeToggle) {
+  const syncThemeToggle = () => {
+    const isLight = document.documentElement.dataset.theme === "light";
+    themeToggle.setAttribute("aria-pressed", String(isLight));
+  };
+  syncThemeToggle();
+  themeToggle.addEventListener("click", () => {
+    const nextTheme = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+    document.documentElement.dataset.theme = nextTheme;
+    localStorage.setItem("autoobenz-theme", nextTheme);
+    syncThemeToggle();
+  });
+}
+
 window.addEventListener("popstate", render);
 
 document.querySelector("#menuButton").addEventListener("click", () => {

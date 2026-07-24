@@ -1,20 +1,52 @@
 :root {
-  --bg: #090908;
-  --surface: #12110f;
-  --surface-2: #1a1815;
-  --ink: #f5f1e8;
-  --ink-2: #c7c0b5;
-  --ink-3: #8d8579;
-  --line: #28241e;
-  --line-strong: #51483a;
-  --accent: #d8a83f;
-  --accent-ink: #171107;
-  --danger: #d94f4f;
-  --success: #4bc690;
+  color-scheme: dark;
+  --bg: #0D1117;
+  --bg-2: #111827;
+  --surface: #151F2A;
+  --surface-2: #1B2532;
+  --input: #16212B;
+  --ink: #F4F5F7;
+  --ink-2: #C9D1D9;
+  --ink-3: #8C99A8;
+  --placeholder: #7E8793;
+  --line: #2B3948;
+  --line-strong: #3A4B5E;
+  --accent: #2F3D4E;
+  --accent-hover: #37495C;
+  --accent-pressed: #263342;
+  --accent-ink: #FFFFFF;
+  --accent-text: #B7C3CF;
+  --success: #4FA37A;
+  --danger: #A52A34;
+  --danger-hover: #92242D;
+  --shadow-strong: rgba(0,0,0,.42);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F4F5F7;
+  --bg-2: #ECEFF3;
+  --surface: #FFFFFF;
+  --surface-2: #F7F8FA;
+  --input: #FFFFFF;
+  --ink: #1F2937;
+  --ink-2: #6B7280;
+  --ink-3: #8A94A3;
+  --placeholder: #9AA5B3;
+  --line: #D8DEE6;
+  --line-strong: #B8C2CE;
+  --accent: #2F3D4E;
+  --accent-hover: #37495C;
+  --accent-pressed: #263342;
+  --accent-ink: #FFFFFF;
+  --accent-text: #2F3D4E;
+  --success: #2F7D5B;
+  --danger: #A52A34;
+  --danger-hover: #92242D;
+  --shadow-strong: rgba(31,41,55,.14);
 }
 
 * { box-sizing: border-box; }
-html { color-scheme: dark; }
 body {
   margin: 0;
   min-height: 100vh;
@@ -22,6 +54,22 @@ body {
   color: var(--ink);
   font-family: "Cairo", "Segoe UI", Tahoma, Arial, sans-serif;
   letter-spacing: 0;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body,
+.login-panel,
+.admin-sidebar,
+.stat-card,
+.panel,
+.modal-panel,
+input,
+select,
+textarea,
+button {
+  transition: background-color .22s ease, color .22s ease, border-color .22s ease, box-shadow .22s ease;
 }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
@@ -35,7 +83,7 @@ a { color: inherit; text-decoration: none; }
   place-items: center;
   padding: 24px;
   background:
-    linear-gradient(90deg, rgba(9,9,8,.92), rgba(9,9,8,.56)),
+    linear-gradient(90deg, rgba(13,17,23,.92), rgba(13,17,23,.56)),
     url("/assets/images/hero.webp") center/cover no-repeat;
 }
 .login-panel {
@@ -44,10 +92,10 @@ a { color: inherit; text-decoration: none; }
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   padding: 28px;
-  box-shadow: 0 24px 70px rgba(0,0,0,.48);
+  box-shadow: 0 24px 70px var(--shadow-strong);
 }
 .login-panel img { width: 150px; height: 54px; object-fit: contain; display: block; margin: 0 0 20px auto; }
-.eyebrow { margin: 0 0 6px; color: var(--accent); font-size: 12px; font-weight: 900; letter-spacing: .18em; }
+.eyebrow { margin: 0 0 6px; color: var(--accent-text); font-size: 12px; font-weight: 900; letter-spacing: .18em; }
 h1, h2, p { margin-top: 0; }
 .login-panel h1 { margin-bottom: 22px; font-size: 26px; }
 
@@ -57,9 +105,14 @@ input, select, textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   outline: 0;
-  background: var(--surface-2);
+  background: var(--input);
   color: var(--ink);
   padding: 0 12px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
 }
 input, select { height: 44px; }
 select[multiple] {
@@ -82,6 +135,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   padding: 0 18px;
   font-weight: 900;
 }
+.login-form button:hover, .primary-action:hover { background: var(--accent-hover); }
+.login-form button:active, .primary-action:active { background: var(--accent-pressed); }
 .form-message { min-height: 20px; margin: 0; color: var(--ink-3); font-size: 13px; }
 .form-message.error { color: var(--danger); }
 .form-message.success { color: var(--success); }
@@ -94,7 +149,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--line);
-  background: #0d0d0c;
+  background: var(--bg);
   padding: 18px;
 }
 .admin-brand img { width: 150px; height: 54px; object-fit: contain; display: block; margin-bottom: 24px; }
@@ -111,7 +166,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   text-align: right;
   font-weight: 800;
 }
-.nav-item:hover, .nav-item.active { color: var(--ink); background: rgba(255,255,255,.045); border-color: var(--line); }
+.nav-item:hover, .nav-item.active { color: var(--ink); background: var(--surface-2); border-color: var(--line); }
 .logout-button {
   margin-top: auto;
   min-height: 42px;
@@ -187,7 +242,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .coupon-code {
   direction: ltr;
   display: inline-flex;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 900;
   letter-spacing: .08em;
 }
@@ -205,7 +260,7 @@ td small { display: block; margin-top: 4px; color: var(--ink-3); font-size: 11px
 .customer-cell b { color: var(--ink); }
 .status-pill { display: inline-flex; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 900; }
 .status-pill.active { background: rgba(75,198,144,.12); color: var(--success); }
-.status-pill.hidden-status { background: rgba(217,79,79,.12); color: var(--danger); }
+.status-pill.hidden-status { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 .status-select {
   min-width: 128px;
   height: 36px;
@@ -234,7 +289,7 @@ td small { display: block; margin-top: 4px; color: var(--ink-3); font-size: 11px
   display: grid;
   place-items: center;
   padding: 22px;
-  background: rgba(0,0,0,.68);
+  background: rgba(13,17,23,.68);
 }
 .modal-panel {
   width: min(980px, 100%);
@@ -301,7 +356,7 @@ td small { display: block; margin-top: 4px; color: var(--ink-3); font-size: 11px
 }
 .order-item b { color: var(--ink); direction: ltr; text-align: right; }
 .order-item span { color: var(--ink-3); }
-.order-item strong { color: var(--accent); white-space: nowrap; }
+.order-item strong { color: var(--accent-text); white-space: nowrap; }
 
 @media (max-width: 920px) {
   .dashboard-view { grid-template-columns: 1fr; }

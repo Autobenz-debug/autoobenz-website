@@ -7,6 +7,13 @@
     <meta name="robots" content="noindex,nofollow" />
     <link rel="icon" href="/assets/images/autoobenz-logo.png" />
     <link rel="preconnect" href="https://dhillppruusgmnshlulp.supabase.co" crossorigin />
+    <script>
+      (() => {
+        const savedTheme = localStorage.getItem("autoobenz-theme");
+        const systemTheme = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        document.documentElement.dataset.theme = savedTheme || systemTheme;
+      })();
+    </script>
     <link rel="stylesheet" href="/admin.css" />
   </head>
   <body>
