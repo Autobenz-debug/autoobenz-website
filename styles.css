@@ -723,7 +723,7 @@ html.app-booting .site-footer { visibility: hidden; }
   color: var(--ink);
   font-size: 16px;
   line-height: 1.35;
-  font-weight: 900;
+  font-weight: 800;
   transition: color .2s ease;
 }
 .brand-card:hover b { color: var(--accent); }
