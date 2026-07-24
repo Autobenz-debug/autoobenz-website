@@ -199,6 +199,10 @@ html.app-booting .site-footer { visibility: hidden; }
 .header-inner { min-height: 64px; display: flex; align-items: center; gap: 10px; }
 .brand-link { flex: 0 0 auto; display: flex; align-items: center; }
 .brand-link img { width: 150px; height: 48px; object-fit: contain; object-position: right center; display: block; }
+:root[data-theme="light"] .brand-link img,
+:root[data-theme="light"] .footer-logo {
+  content: url("/assets/images/autoobenz-logo-light.png");
+}
 .desktop-nav { display: flex; align-items: center; gap: 22px; margin-inline-start: 0; color: var(--ink-2); font-size: 14px; }
 .desktop-nav a {
   display: inline-flex;
