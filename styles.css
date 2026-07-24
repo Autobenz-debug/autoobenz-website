@@ -873,7 +873,14 @@ html.app-booting .site-footer { visibility: hidden; }
 .product-card.reveal-item:hover { transform: translateY(0); }
 .sale-badge { position: absolute; top: 12px; inset-inline-start: 12px; border-radius: 6px; background: var(--danger); color: #fff; padding: 4px 8px; font-size: 12px; font-weight: 800; }
 .product-body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 14px; }
-.product-brand { color: var(--ink-3); font-size: 12px; }
+.product-brand {
+  color: #D9E1EA;
+  font-size: 13px;
+  font-weight: 700;
+}
+:root[data-theme="light"] .product-brand {
+  color: #151F2A;
+}
 .product-title { min-height: 48px; direction: ltr; text-align: right; font-size: 14px; line-height: 1.7; font-weight: 600; }
 .price-row { margin-top: auto; display: flex; align-items: baseline; gap: 8px; }
 .price { color: var(--danger); font-weight: 700; }
