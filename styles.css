@@ -212,20 +212,14 @@ html.app-booting .site-footer { visibility: hidden; }
   transition: color .18s ease;
 }
 .desktop-nav a::after {
-  content: "";
-  position: absolute;
-  inset-inline: 35%;
-  bottom: -10px;
-  height: 2px;
-  border-radius: 999px;
-  background: transparent;
-  transition: background-color .18s ease, inset-inline .18s ease;
+  display: none;
+  content: none;
 }
 .desktop-nav a:hover, .desktop-nav a.active { color: var(--ink); }
 .desktop-nav a:hover::after,
 .desktop-nav a.active::after {
-  inset-inline: 30%;
-  background: var(--danger);
+  display: none;
+  content: none;
 }
 .header-actions { margin-inline-start: auto; display: flex; align-items: center; gap: 12px; }
 .whatsapp-link { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 14px; }
