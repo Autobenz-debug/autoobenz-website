@@ -868,12 +868,12 @@ html.app-booting .site-footer { visibility: hidden; }
 .sale-badge { position: absolute; top: 12px; inset-inline-start: 12px; border-radius: 6px; background: var(--danger); color: #fff; padding: 4px 8px; font-size: 12px; font-weight: 800; }
 .product-body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 14px; }
 .product-brand {
-  color: #D9E1EA;
-  font-size: 13px;
-  font-weight: 700;
+  color: #B7C3CF;
+  font-size: 12px;
+  font-weight: 600;
 }
 :root[data-theme="light"] .product-brand {
-  color: #151F2A;
+  color: #4B5563;
 }
 .product-title { min-height: 48px; direction: ltr; text-align: right; font-size: 14px; line-height: 1.7; font-weight: 600; }
 .price-row { margin-top: auto; display: flex; align-items: baseline; gap: 8px; }
