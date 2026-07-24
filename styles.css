@@ -720,13 +720,19 @@ html.app-booting .site-footer { visibility: hidden; }
 }
 .brand-card b {
   display: block;
-  color: var(--ink);
-  font-size: 16px;
+  color: #F4F5F7;
+  font-size: 17px;
   line-height: 1.35;
   font-weight: 800;
   transition: color .2s ease;
 }
 .brand-card:hover b { color: var(--accent-text); }
+:root[data-theme="light"] .brand-card b {
+  color: #243141;
+}
+:root[data-theme="light"] .brand-card:hover b {
+  color: #A52A34;
+}
 .brand-card small {
   display: block;
   margin-top: 4px;
@@ -1411,7 +1417,7 @@ html.app-booting .site-footer { visibility: hidden; }
   .brand-strip { gap: 12px; }
   .brand-card { min-height: 150px; padding: 16px 10px; }
   .brand-logo { width: 60px; height: 60px; }
-  .brand-card b { font-size: 15px; }
+  .brand-card b { font-size: 16px; }
   .brand-card small { font-size: 12px; }
   .promo-card { height: 320px; }
   .promo-card div { padding: 24px; }
