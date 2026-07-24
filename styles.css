@@ -782,7 +782,7 @@ html.app-booting .site-footer { visibility: hidden; }
   letter-spacing: .08em;
 }
 .promo-card .text-2xl {
-  color: var(--ink);
+  color: #F4F5F7;
   font-size: 24px;
   line-height: 1.25;
   font-weight: 800;
@@ -790,7 +790,7 @@ html.app-booting .site-footer { visibility: hidden; }
 }
 .promo-card h3 {
   margin: 8px 0 0;
-  color: var(--ink);
+  color: #F4F5F7;
   font-size: clamp(24px, 2.55vw, 32px);
   line-height: 1.25;
   font-weight: 800;
