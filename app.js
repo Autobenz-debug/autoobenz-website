@@ -15,6 +15,12 @@ const cartDrawer = document.querySelector("#cartDrawer");
 const mobileNav = document.querySelector("#mobileNav");
 const CUSTOMER_SESSION_KEY = "autoobenz-customer-session-v1";
 const CURRENCY_KEY = "autoobenz-currency-v1";
+const SITE_URL = "https://www.autoobenz.com";
+const DEFAULT_SEO = {
+  title: "أوتو بنز | قطع كاربون فايبر وبودي كت للسيارات الفاخرة في الكويت",
+  description: "متجر أوتو بنز الكويت لقطع الكاربون فايبر، البودي كت، الستيرنق، الشاشات والإضاءة للسيارات الفاخرة مع توصيل لكل الكويت وشحن عالمي.",
+  image: "/assets/images/autoobenz-logo.png",
+};
 let revealObserver = null;
 
 document.documentElement.classList.add("app-booting");
@@ -121,6 +127,65 @@ const escapeHtml = (value = "") => String(value)
   .replaceAll("<", "&lt;")
   .replaceAll(">", "&gt;")
   .replaceAll('"', "&quot;");
+
+const stripText = (value = "") => String(value).replace(/\s+/g, " ").trim();
+
+const absoluteUrl = (path = "/") => {
+  if (!path) return SITE_URL;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+};
+
+function setMeta(selector, attr, value) {
+  if (!value) return;
+  let element = document.head.querySelector(selector);
+  if (!element) {
+    element = document.createElement("meta");
+    const match = selector.match(/\[(name|property)="([^"]+)"\]/);
+    if (match) element.setAttribute(match[1], match[2]);
+    document.head.appendChild(element);
+  }
+  element.setAttribute(attr, value);
+}
+
+function setCanonical(url) {
+  let link = document.head.querySelector('link[rel="canonical"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.setAttribute("rel", "canonical");
+    document.head.appendChild(link);
+  }
+  link.setAttribute("href", url);
+}
+
+function setPageSeo({
+  title = DEFAULT_SEO.title,
+  description = DEFAULT_SEO.description,
+  image = DEFAULT_SEO.image,
+  path = location.pathname,
+  robots = "index, follow",
+} = {}) {
+  const cleanTitle = stripText(title);
+  const cleanDescription = stripText(description).slice(0, 180);
+  const pageUrl = absoluteUrl(path);
+  const imageUrl = absoluteUrl(image);
+
+  document.title = cleanTitle;
+  setMeta('meta[name="description"]', "content", cleanDescription);
+  setMeta('meta[name="robots"]', "content", robots);
+  setMeta('meta[property="og:locale"]', "content", "ar_KW");
+  setMeta('meta[property="og:type"]', "content", "website");
+  setMeta('meta[property="og:site_name"]', "content", "Autoobenz");
+  setMeta('meta[property="og:title"]', "content", cleanTitle);
+  setMeta('meta[property="og:description"]', "content", cleanDescription);
+  setMeta('meta[property="og:url"]', "content", pageUrl);
+  setMeta('meta[property="og:image"]', "content", imageUrl);
+  setMeta('meta[name="twitter:card"]', "content", "summary_large_image");
+  setMeta('meta[name="twitter:title"]', "content", cleanTitle);
+  setMeta('meta[name="twitter:description"]', "content", cleanDescription);
+  setMeta('meta[name="twitter:image"]', "content", imageUrl);
+  setCanonical(pageUrl);
+}
 
 const descendants = (slug) => {
   const root = state.categories.find((cat) => cat.slug === slug && Number(cat.parent) === 0);
@@ -633,6 +698,7 @@ function brandMarquee() {
 }
 
 function renderHome() {
+  setPageSeo();
   const featured = state.products.slice(-8).reverse();
   app.innerHTML = `
     ${hero()}
@@ -744,6 +810,13 @@ function renderShop() {
   const selectedModel = params.get("model") || "";
   const q = params.get("q") || "";
   const modelOptions = selectedBrand ? brandModels(selectedBrand) : [];
+  setPageSeo({
+    title: selectedBrand
+      ? `${state.brands.find((brand) => brand.slug === selectedBrand)?.ar || "المتجر"} | أوتو بنز`
+      : "المتجر | أوتو بنز الكويت",
+    description: "تصفح قطع السيارات الفاخرة من أوتو بنز: بودي كت، كاربون فايبر، ستيرنق، كاربلاي وشاشات وإضاءة مع توصيل داخل الكويت وشحن عالمي.",
+    path: `/shop${location.search}`,
+  });
 
   const filtered = filterShopProducts({ selectedBrand, selectedModel, selectedType, q });
 
@@ -853,6 +926,13 @@ function renderProduct(slug) {
     return;
   }
   const brand = productBrand(product);
+  const productImage = imgLocal(productImages(product)[0]);
+  setPageSeo({
+    title: `${product.name} | أوتو بنز`,
+    description: product.description || `${product.name} متوفر لدى أوتو بنز الكويت مع توصيل داخل الكويت وشحن عالمي.`,
+    image: productImage,
+    path: `/product/${product.slug}`,
+  });
   const related = state.products
     .filter((item) => item.id !== product.id && brand && inBrand(item, brand.slug))
     .slice(0, 4);
@@ -865,7 +945,7 @@ function renderProduct(slug) {
         <nav class="breadcrumbs"><a href="/" data-link>الرئيسية</a> / <a href="/shop" data-link>المتجر</a></nav>
         <div class="product-detail">
           <div>
-            <div class="gallery-main"><img id="mainImage" src="${imgLocal(productImages(product)[0])}" alt="${escapeHtml(product.name)}" loading="eager" fetchpriority="high" decoding="async"></div>
+            <div class="gallery-main"><img id="mainImage" src="${productImage}" alt="${escapeHtml(product.name)}" loading="eager" fetchpriority="high" decoding="async"></div>
             <div class="thumbs">
               ${productImages(product).map((image, index) => `<button class="${index === 0 ? "active" : ""}" data-image="${imgLocal(image)}"><img src="${imgLocal(image)}" alt=""></button>`).join("")}
             </div>
@@ -938,6 +1018,11 @@ function renderProduct(slug) {
 }
 
 function renderVin() {
+  setPageSeo({
+    title: "فحص VIN | أوتو بنز",
+    description: "أرسل رقم الشاصي VIN لفريق أوتو بنز لمعرفة القطع المتوافقة مع سيارتك الفاخرة داخل الكويت.",
+    path: "/vin-check",
+  });
   app.innerHTML = `
     <section class="shop-layout">
       <div class="container">
@@ -1147,6 +1232,12 @@ function validatePhoneForCountry(phone, country) {
 
 function renderAuth(mode = "login", notice = "") {
   const isRegister = mode === "register";
+  setPageSeo({
+    title: isRegister ? "إنشاء حساب | أوتو بنز" : "تسجيل دخول العملاء | أوتو بنز",
+    description: "دخول عملاء أوتو بنز لمتابعة الطلبات وحفظ بيانات الشحن والتواصل.",
+    path: isRegister ? "/register" : "/login",
+    robots: "noindex, nofollow",
+  });
   const defaultCountry = "الكويت";
   app.innerHTML = `
     <section class="auth-page">
@@ -1300,6 +1391,12 @@ function renderCustomerOrders(orders) {
 }
 
 function renderAccount() {
+  setPageSeo({
+    title: "حسابي | أوتو بنز",
+    description: "صفحة حساب العميل في أوتو بنز لمتابعة الطلبات وتحديث بيانات الشحن.",
+    path: "/account",
+    robots: "noindex, nofollow",
+  });
   if (!state.customerSession?.user) {
     renderAuth("login", "سجل دخولك أو أنشئ حساباً لمتابعة طلباتك.");
     return;
@@ -1373,6 +1470,12 @@ function renderAccount() {
 }
 
 function renderCheckout() {
+  setPageSeo({
+    title: "إتمام الطلب | أوتو بنز",
+    description: "إتمام طلبك من متجر أوتو بنز بأمان مع خيارات دفع متعددة وتوصيل داخل الكويت.",
+    path: "/checkout",
+    robots: "noindex, nofollow",
+  });
   const lines = cartLines();
   const profile = state.customerProfile || {};
   const customerName = profile.full_name || state.customerSession?.user?.user_metadata?.full_name || "";
@@ -1726,6 +1829,12 @@ async function submitCheckout(event) {
 }
 
 function renderOrderSuccess() {
+  setPageSeo({
+    title: "تم استلام الطلب | أوتو بنز",
+    description: "تم استلام طلبك لدى أوتو بنز وسنقوم بتحديث حالة الدفع والتوصيل.",
+    path: `/order-success${location.search}`,
+    robots: "noindex, nofollow",
+  });
   const params = new URLSearchParams(location.search);
   const orderNumber = params.get("order") || "تم استلام الطلب";
   app.innerHTML = `
@@ -1747,6 +1856,12 @@ function renderOrderSuccess() {
 }
 
 function renderNotFound() {
+  setPageSeo({
+    title: "الصفحة غير موجودة | أوتو بنز",
+    description: "الصفحة المطلوبة غير موجودة في متجر أوتو بنز.",
+    path: location.pathname,
+    robots: "noindex, nofollow",
+  });
   app.innerHTML = `<div class="container"><div class="empty-state"><b>الصفحة غير موجودة</b><p>ارجع للمتجر وتصفح المنتجات.</p><a class="primary-button" href="/shop" data-link>المتجر</a></div></div>`;
 }
 

@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin.html
+Disallow: /checkout
+Disallow: /account
+Disallow: /login
+Disallow: /register
+Disallow: /order-success
+
+Sitemap: https://www.autoobenz.com/sitemap.xml
